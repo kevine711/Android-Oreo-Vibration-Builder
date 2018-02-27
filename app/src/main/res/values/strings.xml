@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Android Oreo Vibration Builder</string>
+    <string name="action_settings">Settings</string>
+    <string name="activity_vibration_profile">Edit Profile</string>
+</resources>
