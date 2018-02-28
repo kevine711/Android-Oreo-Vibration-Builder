@@ -2,4 +2,9 @@
     <string name="app_name">Android Oreo Vibration Builder</string>
     <string name="action_settings">Settings</string>
     <string name="activity_vibration_profile">Edit Profile</string>
+    <string name="profile_name">Profile Name</string>
+    <string name="intensity_hint">Intensity (1-255) ex. 255,20,3,77,250</string>
+    <string name="delay_hint">Delay (ms) ex. 100,1000,250,10,2500</string>
+    <string name="run">Run</string>
+    <string name="send_as_email">Send as email</string>
 </resources>
