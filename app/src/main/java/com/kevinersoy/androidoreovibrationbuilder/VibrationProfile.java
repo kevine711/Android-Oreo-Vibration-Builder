@@ -22,6 +22,11 @@ public class VibrationProfile extends AppCompatActivity {
     private EditText textName;
     private EditText textIntensity;
     private EditText textDelay;
+    private int mProfilePosition;
+    private boolean mIsCancelling;
+    private String mOriginalName;
+    private String mOriginalIntensity;
+    private String mOriginalDelay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,12 +38,21 @@ public class VibrationProfile extends AppCompatActivity {
         //check if we're populating existing data, or if this is a new profile
         checkIntent();
 
+        //save original values
+        saveOriginalValues();
+
         textName = (EditText)findViewById(R.id.text_name);
         textIntensity = (EditText)findViewById(R.id.text_intensity);
         textDelay = (EditText)findViewById(R.id.text_delay);
 
         if(!mIsNewProfile)
             displayProfile(textName, textIntensity, textDelay);
+    }
+
+    private void saveOriginalValues() {
+        mOriginalName = mProfile.getName();
+        mOriginalIntensity = mProfile.getIntensity();
+        mOriginalDelay = mProfile.getDelay();
     }
 
     private void displayProfile(EditText textName, EditText textIntensity, EditText textDelay) {
@@ -48,11 +62,21 @@ public class VibrationProfile extends AppCompatActivity {
     }
 
     private void checkIntent() {
+        //If new profile, create one in DataManager.  If not, extract data from intent
         Intent intent = getIntent();
         int position = intent.getIntExtra(PROFILE_POSITION, POSITION_NOT_SET);
         mIsNewProfile = (position == POSITION_NOT_SET);
-        if (!mIsNewProfile)
+        if (mIsNewProfile){
+            createNewProfile();
+        } else {
             mProfile = DataManager.getInstance().getProfiles().get(position);
+        }
+    }
+
+    private void createNewProfile() {
+        DataManager dm = DataManager.getInstance();
+        mProfilePosition = dm.createNewProfile();
+        mProfile = dm.getProfiles().get(mProfilePosition);
     }
 
     @Override
@@ -60,6 +84,32 @@ public class VibrationProfile extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_vibration_profile, menu);
         return true;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mIsCancelling){
+            if(mIsNewProfile) {  //if cancelling on a new profile, delete the profile
+                DataManager.getInstance().removeProfile(mProfilePosition);
+            } else {
+                restoreOldValues();  //cancelling on existing profile, restore previous values
+            }
+        } else {  //not cancelling, save the profile
+            saveProfile();
+        }
+    }
+
+    private void restoreOldValues() {
+        mProfile.setName(mOriginalName);
+        mProfile.setIntensity(mOriginalIntensity);
+        mProfile.setDelay(mOriginalDelay);
+    }
+
+    private void saveProfile() {
+        mProfile.setName(textName.getText().toString());
+        mProfile.setIntensity(textIntensity.getText().toString());
+        mProfile.setDelay(textDelay.getText().toString());
     }
 
     @Override
@@ -73,8 +123,10 @@ public class VibrationProfile extends AppCompatActivity {
         if (id == R.id.action_send_mail) {
             sendEmail();
             return true;
+        } else if (id == R.id.action_cancel) { //cancel, don't save
+            mIsCancelling = true;
+            finish();
         }
-
         return super.onOptionsItemSelected(item);
     }
 

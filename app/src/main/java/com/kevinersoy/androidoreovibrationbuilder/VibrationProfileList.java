@@ -14,6 +14,8 @@ import java.util.List;
 
 public class VibrationProfileList extends AppCompatActivity {
 
+    private ArrayAdapter<ProfileInfo> mAdapterProfiles;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,14 +34,20 @@ public class VibrationProfileList extends AppCompatActivity {
         initializeContent();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mAdapterProfiles.notifyDataSetChanged();
+    }
+
     private void initializeContent() {
         final ListView listProfiles = (ListView)findViewById(R.id.list_profiles);
 
         //getInstance initializes the example profiles for now
         List<ProfileInfo> profiles = DataManager.getInstance().getProfiles();
-        ArrayAdapter<ProfileInfo> adapterProfiles = new ArrayAdapter<ProfileInfo>(this,android.R.layout.simple_list_item_1, profiles);
+        mAdapterProfiles = new ArrayAdapter<ProfileInfo>(this,android.R.layout.simple_list_item_1, profiles);
 
-        listProfiles.setAdapter(adapterProfiles);
+        listProfiles.setAdapter(mAdapterProfiles);
 
         listProfiles.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
