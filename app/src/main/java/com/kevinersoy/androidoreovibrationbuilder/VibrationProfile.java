@@ -16,6 +16,9 @@ import android.widget.EditText;
 
 public class VibrationProfile extends AppCompatActivity {
     public static final String PROFILE_POSITION = "com.kevinersoy.androidoreovibrationbuilder.PROFILE_POSITION";
+    public static final String ORIGINAL_PROFILE_NAME = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_NAME";
+    public static final String ORIGINAL_PROFILE_INTENSITY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_INTENSITY";
+    public static final String ORIGINAL_PROFILE_DELAY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_DELAY";
     public static final int POSITION_NOT_SET = -1;
     private ProfileInfo mProfile;
     private Boolean mIsNewProfile;
@@ -39,7 +42,11 @@ public class VibrationProfile extends AppCompatActivity {
         checkIntent();
 
         //save original values
-        saveOriginalValues();
+        if (savedInstanceState == null) {
+            saveOriginalValues();
+        } else {
+            restoreOriginalValues(savedInstanceState);
+        }
 
         textName = (EditText)findViewById(R.id.text_name);
         textIntensity = (EditText)findViewById(R.id.text_intensity);
@@ -47,6 +54,12 @@ public class VibrationProfile extends AppCompatActivity {
 
         if(!mIsNewProfile)
             displayProfile(textName, textIntensity, textDelay);
+    }
+
+    private void restoreOriginalValues(Bundle savedInstanceState) {
+        mOriginalName = savedInstanceState.getString(ORIGINAL_PROFILE_NAME);
+        mOriginalIntensity = savedInstanceState.getString(ORIGINAL_PROFILE_INTENSITY);
+        mOriginalDelay = savedInstanceState.getString(ORIGINAL_PROFILE_DELAY);
     }
 
     private void saveOriginalValues() {
@@ -84,6 +97,14 @@ public class VibrationProfile extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_vibration_profile, menu);
         return true;
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(ORIGINAL_PROFILE_NAME, mOriginalName);
+        outState.putString(ORIGINAL_PROFILE_INTENSITY, mOriginalIntensity);
+        outState.putString(ORIGINAL_PROFILE_DELAY, mOriginalDelay);
     }
 
     @Override
