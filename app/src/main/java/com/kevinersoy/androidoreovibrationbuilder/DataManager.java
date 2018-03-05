@@ -46,11 +46,20 @@ public class DataManager {
         mProfiles.remove(index);
     }
 
-    private void initializeExampleProfiles() {
+    public void initializeExampleProfiles() {
         mProfiles.add(new ProfileInfo("Example1", "100,50,100,50", "250,500,250,500"));
         mProfiles.add(new ProfileInfo("Example2", "255,10,30,50", "250,500,250,500"));
         mProfiles.add(new ProfileInfo("Example3", "10,50,100,250,100,50,10", "25,25,25,25,25,25,25"));
     }
 
 
+    public int createNewProfile(String profileName, String profileIntensity, String profileDelay) {
+        int index = createNewProfile();
+        ProfileInfo profile = getProfiles().get(index);
+        profile.setName(profileName);
+        profile.setIntensity(profileIntensity);
+        profile.setDelay(profileDelay);
+
+        return index;
+    }
 }
