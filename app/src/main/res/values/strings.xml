@@ -7,4 +7,6 @@
     <string name="delay_hint">Delay (ms) ex. 100,1000,250,10,2500</string>
     <string name="run">Run</string>
     <string name="send_as_email">Send as email</string>
+    <string name="vibrator_not_found">Vibrator not found</string>
+    <string name="missing_inputs">You must supply at least 1 Intensity and 1 Delay</string>
 </resources>

@@ -12,6 +12,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,7 +91,12 @@ public class VibrationProfile extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //Generate vibration based on profile
-                waveformVibration();
+                if (textDelay.getText().toString().isEmpty() || textIntensity.getText().toString().isEmpty()){
+                    Toast.makeText(getApplicationContext(), R.string.missing_inputs,
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    waveformVibration();
+                }
             }
         });
     }
@@ -128,21 +134,24 @@ public class VibrationProfile extends AppCompatActivity {
             }
         }
         //convert back to csv String and set EditText value
+        textIntensity.setText(buildCsvString(intensity));
+
+    }
+
+    private String buildCsvString(List list){
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i<intensity.size(); i++){
-            sb.append(intensity.get(i));
-            if (i != intensity.size()-1)
-                    sb.append(",");
+        for (int i = 0; i<list.size(); i++){
+            sb.append(list.get(i));
+            if (i != list.size()-1)
+                sb.append(",");
         }
-        textIntensity.setText(sb.toString());
         /*  Java 8 not allowed
         textIntensity.setText(intensity.stream()
                 .map(i -> i.toString())
                 .collect(Collectors.joining(",")));
         */
+        return sb.toString();
     }
-
-
 
     private void waveformVibration() {
         //get vibrator and build the VibrationEffect, then run it
@@ -161,18 +170,27 @@ public class VibrationProfile extends AppCompatActivity {
             intensity.add(Integer.parseInt(s));
         }
 
-        //correct for offset in input counts
+        //correct for offset in input counts (add trailing zeros)
         correctInputCountOffset(delay, intensity);
+
+        //update Edit Text with trailing zeros
+        textIntensity.setText(buildCsvString(intensity));
+        textDelay.setText(buildCsvString(delay));
 
         //convert to primitive arrays
         long[] aDelay = new long[delay.size()];
         for(int i = 0; i < delay.size(); i++)
             aDelay[i] = delay.get(i);
         int[] aIntensity = new int[intensity.size()];
-        for(int i = 0; i < delay.size(); i++)
-            aDelay[i] = delay.get(i);
+        for(int i = 0; i < intensity.size(); i++)
+            aIntensity[i] = intensity.get(i);
 
-        v.vibrate(VibrationEffect.createWaveform(aDelay, aIntensity, -1));
+        if (v != null) {
+            v.vibrate(VibrationEffect.createWaveform(aDelay, aIntensity, -1));
+        } else {
+            Toast.makeText(this, R.string.vibrator_not_found,
+                    Toast.LENGTH_LONG).show();
+        }
 
     }
 
