@@ -1,12 +1,20 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by kevinersoy on 2/27/18.
@@ -54,6 +62,132 @@ public class VibrationProfile extends AppCompatActivity {
 
         if(!mIsNewProfile)
             displayProfile(textName, textIntensity, textDelay);
+
+
+        //validate inputs on text changed
+        textIntensity.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus){
+                    validateInputs();
+                }
+            }
+        });
+        textDelay.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus){
+                    validateInputs();
+                }
+            }
+        });
+
+
+
+        //set up onClick listener for Run button
+        Button mButton = (Button)findViewById(R.id.button_run);
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Generate vibration based on profile
+                waveformVibration();
+            }
+        });
+    }
+
+    private void validateInputs(){
+        //use regex to replace non numeric digits (excl ",")
+        //also replace multiple delimiters
+        String text = textDelay.getText().toString();
+        text = text.replaceAll("[^\\d,]", ""); //remove all non numeric/","
+        text = text.replaceAll("[,]{2,}",","); //remove duplicate ","
+        textDelay.setText(text);
+
+        text = textIntensity.getText().toString();
+        text = text.replaceAll("[^\\d,]", "");
+        textIntensity.setText(text);
+
+        //correct for max intensity 255
+        List<Integer> intensity = new ArrayList<Integer>();
+        for (String s : text.split(",")){
+            int value;
+            try {
+                value = Integer.parseInt(s);
+            } catch (NumberFormatException nfe){
+                if (s.isEmpty()) {
+                    value = -1;
+                } else {
+                    value = 255;
+                }
+            }
+            if (value > 255){
+                intensity.add(255);
+            } else {
+                if (value > 0) //value will be -1 if no text between delimiter
+                    intensity.add(value);
+            }
+        }
+        //convert back to csv String and set EditText value
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i<intensity.size(); i++){
+            sb.append(intensity.get(i));
+            if (i != intensity.size()-1)
+                    sb.append(",");
+        }
+        textIntensity.setText(sb.toString());
+        /*  Java 8 not allowed
+        textIntensity.setText(intensity.stream()
+                .map(i -> i.toString())
+                .collect(Collectors.joining(",")));
+        */
+    }
+
+
+
+    private void waveformVibration() {
+        //get vibrator and build the VibrationEffect, then run it
+        //validate inputs
+        validateInputs();
+
+        //get reference to Vibrator
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        //parse text inputs
+        List<Long> delay = new ArrayList<Long>();
+        for (String s : textDelay.getText().toString().split(",")){
+            delay.add(Long.parseLong(s));
+        }
+        List<Integer> intensity = new ArrayList<Integer>();
+        for (String s : textIntensity.getText().toString().split(",")){
+            intensity.add(Integer.parseInt(s));
+        }
+
+        //correct for offset in input counts
+        correctInputCountOffset(delay, intensity);
+
+        //convert to primitive arrays
+        long[] aDelay = new long[delay.size()];
+        for(int i = 0; i < delay.size(); i++)
+            aDelay[i] = delay.get(i);
+        int[] aIntensity = new int[intensity.size()];
+        for(int i = 0; i < delay.size(); i++)
+            aDelay[i] = delay.get(i);
+
+        v.vibrate(VibrationEffect.createWaveform(aDelay, aIntensity, -1));
+
+    }
+
+
+
+    private void correctInputCountOffset(List<Long> delay, List<Integer> intensity) {
+        int dSize = delay.size();
+        int iSize = intensity.size();
+        if (dSize > iSize){
+            for (int i = 0; i<dSize-iSize; i++)
+                intensity.add(0);
+        } else {
+            for (int i = 0; i<iSize-dSize; i++)
+                delay.add((long)0);
+        }
     }
 
     private void restoreOriginalValues(Bundle savedInstanceState) {
