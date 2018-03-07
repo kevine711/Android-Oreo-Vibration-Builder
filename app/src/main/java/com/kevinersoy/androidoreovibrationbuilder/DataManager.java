@@ -47,9 +47,9 @@ public class DataManager {
     }
 
     public void initializeExampleProfiles() {
-        mProfiles.add(new ProfileInfo("Example1", "100,50,100,50", "250,500,250,500"));
-        mProfiles.add(new ProfileInfo("Example2", "255,10,30,50", "250,500,250,500"));
-        mProfiles.add(new ProfileInfo("Example3", "10,50,100,250,100,50,10", "25,25,25,25,25,25,25"));
+        mProfiles.add(new ProfileInfo("Example1", "255,220,200,170,140,120,90,60,30", "50,50,50,50,50,50,50,50,50"));
+        mProfiles.add(new ProfileInfo("Example2", "255,30,255,130,40,20", "30,75,30,30,30,80"));
+        mProfiles.add(new ProfileInfo("Example3", "255,30,255,30,255,30,255,30", "30,75,30,75,30,75,30,75"));
     }
 
 
