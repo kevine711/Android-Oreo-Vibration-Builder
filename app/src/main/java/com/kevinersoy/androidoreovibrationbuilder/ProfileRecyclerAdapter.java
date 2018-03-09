@@ -47,7 +47,7 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
-
+        //using inner class to define ViewHolder since it will only be used with this Adapter
         public final TextView mTextName;
         public final TextView mTextIntensity;
         public final TextView mTextDelay;
@@ -59,6 +59,7 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
             mTextIntensity = (TextView)itemView.findViewById(R.id.text_intensity);
             mTextDelay = (TextView)itemView.findViewById(R.id.text_delay);
 
+            //setting onClickListener here on the parent view because no child view is clickable
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

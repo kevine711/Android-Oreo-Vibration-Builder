@@ -299,8 +299,32 @@ public class VibrationProfile extends AppCompatActivity {
         } else if (id == R.id.action_cancel) { //cancel, don't save
             mIsCancelling = true;
             finish();
+        } else if (id == R.id.action_next) {
+            moveNext();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        //disable "next" from options menu when on the last profile
+        //system schedules a call to this method after we invalidateOptionsMenu in moveNext
+        MenuItem item = menu.findItem(R.id.action_next);
+        int lastProfileIndex = DataManager.getInstance().getProfiles().size() - 1;
+        item.setEnabled(lastProfileIndex > mProfilePosition);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    private void moveNext() {
+        //move to the next profile in the list
+        ++mProfilePosition;
+        mProfile = DataManager.getInstance().getProfiles().get(mProfilePosition);
+
+        saveOriginalValues();
+        displayProfile(textName,textIntensity,textDelay);
+        //invalidateOptionsMenu so the system schedules a call to onPrepareOptionsMenu where we
+        //disable "next" if we're on the last profile.
+        invalidateOptionsMenu();
     }
 
     private void sendEmail() {
