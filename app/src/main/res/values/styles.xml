@@ -17,4 +17,16 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="ProfileName" parent="@android:style/TextAppearance.Material.Large">
+        <item name="android:textColor">@color/vibration_builder_blue</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="AddFab" parent="@style/Widget.Design.FloatingActionButton">
+        <item name="srcCompat">@drawable/ic_add_circle_black_24dp</item>
+        <item name="android:tint">@android:color/white</item>
+    </style>
+
+
+
 </resources>
