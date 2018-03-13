@@ -3,6 +3,7 @@ package com.kevinersoy.androidoreovibrationbuilder;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +26,7 @@ public class VibrationProfileList extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         //Create database open helper instance
+        //If database didn't exist, create and add example profiles
         mDbOpenHelper = new VibrationProfileBuilderOpenHelper(this);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -51,24 +53,37 @@ public class VibrationProfileList extends AppCompatActivity {
     }
 
     private void loadProfiles() {
-        SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
-        String[] profileColumns = {
-                ProfileInfoEntry.COLUMN_PROFILE_NAME,
-                ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
-                ProfileInfoEntry.COLUMN_PROFILE_DELAY,
-                ProfileInfoEntry._ID};
-        Cursor profileCursor = db.query(ProfileInfoEntry.TABLE_NAME, profileColumns,
-                null, null, null, null, null);
-        mProfileRecyclerAdapter.changeCursor(profileCursor);
+        //Load profiles and set our adapter's cursor in background via AsyncTask
+        AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] objects) {
+                SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
+                String[] profileColumns = {
+                        ProfileInfoEntry.COLUMN_PROFILE_NAME,
+                        ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
+                        ProfileInfoEntry.COLUMN_PROFILE_DELAY,
+                        ProfileInfoEntry._ID};
+                Cursor profileCursor = db.query(ProfileInfoEntry.TABLE_NAME, profileColumns,
+                        null, null, null, null, null);
+                mProfileRecyclerAdapter.changeCursor(profileCursor);
+                return null;
+            }
+        }.execute();
+
     }
 
     private void initializeContent() {
+        //Tell DataManager to load the profiles from the database into the List<ProfileInfo> field
         DataManager.loadFromDatabase(mDbOpenHelper);
+
+        //Set up RecyclerView with a layout manager
         final RecyclerView recyclerProfiles = (RecyclerView) findViewById(R.id.list_profiles);
         final LinearLayoutManager profilesLayoutManager = new LinearLayoutManager(this);
         recyclerProfiles.setLayoutManager(profilesLayoutManager);
 
-
+        //Set field for our recycler adapter passing a null cursor and set this adapter for
+        //our RecyclerView
+        //Cursor will get set when we loadProfiles() in onResume()
         mProfileRecyclerAdapter = new ProfileRecyclerAdapter(this, null);
         recyclerProfiles.setAdapter(mProfileRecyclerAdapter);
 

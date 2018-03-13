@@ -6,6 +6,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 /**
  * Created by kevinersoy on 3/11/18.
+ * We're extending SQLiteOpenHelper which allows us to getReadableDatabase()  (or Writable)
+ * When those calls are initiated, the database will be created if it doesn't exist yet.
+ * For this creation, we're Overriding onCreate, and executing the SQL to create the table
+ * and insert the examples
+ * We're not using onUpgrade at the moment, but if the table changes in the future, we'll increment
+ * the DATABASE_VERSION constant and make the necessary changes in the onUpgrade method depending
+ * on the oldVersion and newVersion
  */
 
 public class VibrationProfileBuilderOpenHelper extends SQLiteOpenHelper {

@@ -13,6 +13,11 @@ import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabas
 
 /**
  * Created by kevinersoy on 3/8/18.
+ * This class is our custom adapter for the RecyclerView from VibrationProfileList activity
+ * We'll make use of a passed cursor (from database query) to populate our view holders
+ * Nested ViewHolder class extends RecyclerView.ViewHolder and sets the onClickListeners for each
+ * view.
+ * Notify super class when dataset changed (when new cursor is supplied)
  */
 
 public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecyclerAdapter.ViewHolder> {
@@ -26,6 +31,7 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
     private int mIdPos;
 
     public ProfileRecyclerAdapter(Context context, Cursor cursor) {
+        //Constructor - set fields and get column indices
         mContext = context;
         mCursor = cursor;
         mLayoutInflater = LayoutInflater.from(mContext);
@@ -43,21 +49,31 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
     }
 
     public void changeCursor(Cursor cursor) {
+        //Allow instance to update the cursor.  Close existing cursor first.
+        //Notify super class the data set changed
         if (mCursor != null)
             mCursor.close();
         mCursor = cursor;
-        populateColumnPositions();
+        populateColumnPositions(); //new cursor, need to reset column positions
         notifyDataSetChanged();
     }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        //When a view holder item is created, inflate that view and return the  a new ViewHolder
+        // instance with the View we inflated.
         View itemView = mLayoutInflater.inflate(R.layout.item_profile_list, parent, false);
         return new ViewHolder(itemView);
     }
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
+        //Binding data to the ViewHolder
+        /*
+            Move the cursor the the position requested.
+            Populate local variables with required cursor.get methods
+            Set holder fields with this data
+         */
         mCursor.moveToPosition(position);
         String name = mCursor.getString(mProfileNamePos);
         String intensity = mCursor.getString(mProfileIntensityPos);

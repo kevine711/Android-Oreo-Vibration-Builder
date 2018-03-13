@@ -5,6 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 
 /**
  * Created by kevinersoy on 3/11/18.
+ * The purpose of this class is to insert sample profiles when the database is first created.
+ * Our VibrationProfileBuilderOpenHelper class is the only class calling this worker class.
  */
 
 public class DatabaseDataWorker {

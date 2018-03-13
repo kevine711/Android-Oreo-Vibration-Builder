@@ -4,6 +4,11 @@ import android.provider.BaseColumns;
 
 /**
  * Created by kevinersoy on 3/11/18.
+ * The purpose of this class is to define constants for our table structure and SQL strings used
+ * when creating the table/s.
+ * If necessary (if multiple tables and we're using JOIN in a query) we can include a method
+ * here to provide the table name qualified version of column names.
+ * ex. return TABLE_NAME + "." + column
  */
 
 public final class VibrationProfileBuilderDatabaseContract {

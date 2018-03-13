@@ -22,9 +22,9 @@ public class DataManager {
 
 
     public static DataManager getInstance(){
+        //Implement singleton functionality
         if (mInstance == null) {
             mInstance = new DataManager();
-
         }
         return mInstance;
     }
@@ -81,16 +81,6 @@ public class DataManager {
                 return i;
         }
         return -1;
-    }
-
-    public void removeProfile(int index){
-        mProfiles.remove(index);
-    }
-
-    public void initializeExampleProfiles() {
-        //mProfiles.add(new ProfileInfo("Example1", "255,220,200,170,140,120,90,60,30", "50,50,50,50,50,50,50,50,50"));
-        //mProfiles.add(new ProfileInfo("Example2", "255,30,255,130,40,20", "30,75,30,30,30,80"));
-        //mProfiles.add(new ProfileInfo("Example3", "255,30,255,30,255,30,255,30", "30,75,30,75,30,75,30,75"));
     }
 
 
