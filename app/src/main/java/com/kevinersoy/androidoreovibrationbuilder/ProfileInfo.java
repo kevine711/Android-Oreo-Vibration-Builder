@@ -15,6 +15,7 @@ public final class ProfileInfo implements Parcelable {
     private String mName;
     private String mIntensity;
     private String mDelay;
+    private int mId;
 
 
     //Default constructor, public
@@ -22,6 +23,14 @@ public final class ProfileInfo implements Parcelable {
         mName = name;
         mIntensity = intensity;
         mDelay = delay;
+    }
+
+    //Default constructor, public
+    public ProfileInfo (String name, String intensity, String delay, int id){
+        mName = name;
+        mIntensity = intensity;
+        mDelay = delay;
+        mId = id;
     }
 
     //Constructor used when recreating ProfileInfo POJO from parcel
@@ -36,6 +45,15 @@ public final class ProfileInfo implements Parcelable {
     /*
      * Getters and Setters
      */
+
+    public int getId() {
+        return mId;
+    }
+
+    public void setId(int id) {
+        mId = id;
+    }
+
     public String getName() {
         return mName;
     }

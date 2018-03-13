@@ -1,6 +1,11 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,9 +24,45 @@ public class DataManager {
     public static DataManager getInstance(){
         if (mInstance == null) {
             mInstance = new DataManager();
-            mInstance.initializeExampleProfiles();
+
         }
         return mInstance;
+    }
+
+    public static void loadFromDatabase(VibrationProfileBuilderOpenHelper dbHelper) {
+        //Query the database then load the profiles
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String[] profileColumns = {ProfileInfoEntry.COLUMN_PROFILE_NAME,
+                ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
+                ProfileInfoEntry.COLUMN_PROFILE_DELAY,
+                ProfileInfoEntry._ID};
+        Cursor profileCursor = db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, null, null, null, null, null);
+        //profileCursor is now positioned before the first record
+        loadProfilesFromDatabase(profileCursor);
+    }
+
+    private static void loadProfilesFromDatabase(Cursor cursor) {
+        //Get column index from the query result for each column requested.
+        //If our query changes later, these indices will still point to the correct columns.
+        //Next, clear the profiles list, cycle through the query results and populate the profiles
+        //list.
+        int profileNamePos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
+        int profileIntensityPos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
+        int profileDelayPos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
+        int idPos = cursor.getColumnIndex(ProfileInfoEntry._ID);
+
+        DataManager dm = getInstance();
+        dm.mProfiles.clear();
+        while(cursor.moveToNext()){  //.moveToNext returns true if there was a next row to move to
+            String profileName = cursor.getString(profileNamePos);
+            String profileIntensity = cursor.getString(profileIntensityPos);
+            String profileDelay = cursor.getString(profileDelayPos);
+            int id = cursor.getInt(idPos);
+            ProfileInfo profile = new ProfileInfo(profileName, profileIntensity, profileDelay, id);
+
+            dm.mProfiles.add(profile);
+        }
+        cursor.close();
     }
 
     public List<ProfileInfo> getProfiles() {
@@ -47,9 +88,9 @@ public class DataManager {
     }
 
     public void initializeExampleProfiles() {
-        mProfiles.add(new ProfileInfo("Example1", "255,220,200,170,140,120,90,60,30", "50,50,50,50,50,50,50,50,50"));
-        mProfiles.add(new ProfileInfo("Example2", "255,30,255,130,40,20", "30,75,30,30,30,80"));
-        mProfiles.add(new ProfileInfo("Example3", "255,30,255,30,255,30,255,30", "30,75,30,75,30,75,30,75"));
+        //mProfiles.add(new ProfileInfo("Example1", "255,220,200,170,140,120,90,60,30", "50,50,50,50,50,50,50,50,50"));
+        //mProfiles.add(new ProfileInfo("Example2", "255,30,255,130,40,20", "30,75,30,30,30,80"));
+        //mProfiles.add(new ProfileInfo("Example3", "255,30,255,30,255,30,255,30", "30,75,30,75,30,75,30,75"));
     }
 
 

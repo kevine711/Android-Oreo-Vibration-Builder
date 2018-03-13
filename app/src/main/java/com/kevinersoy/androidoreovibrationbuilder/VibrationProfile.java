@@ -1,7 +1,14 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
+import android.app.LoaderManager;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -17,28 +24,38 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+
 /**
  * Created by kevinersoy on 2/27/18.
  * This is the Activity representing the vibration profile.  Used to edit/run profiles.
  * 2/28 - Changing intent to pass position rather than actual profile since DataManager is singleton
  */
 
-public class VibrationProfile extends AppCompatActivity {
-    public static final String PROFILE_POSITION = "com.kevinersoy.androidoreovibrationbuilder.PROFILE_POSITION";
+public class VibrationProfile extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<Cursor>{
+    public static final String PROFILE_ID = "com.kevinersoy.androidoreovibrationbuilder.PROFILE_ID";
     public static final String ORIGINAL_PROFILE_NAME = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_NAME";
     public static final String ORIGINAL_PROFILE_INTENSITY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_INTENSITY";
     public static final String ORIGINAL_PROFILE_DELAY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_DELAY";
-    public static final int POSITION_NOT_SET = -1;
-    private ProfileInfo mProfile;
+    public static final int ID_NOT_SET = -1;
+    public static final int LOADER_PROFILES = 0;
+    private ProfileInfo mProfile = new ProfileInfo("", "", "");
     private Boolean mIsNewProfile;
-    private EditText textName;
-    private EditText textIntensity;
-    private EditText textDelay;
+    private EditText mTextName;
+    private EditText mTextIntensity;
+    private EditText mTextDelay;
     private int mProfilePosition;
     private boolean mIsCancelling;
     private String mOriginalName;
     private String mOriginalIntensity;
     private String mOriginalDelay;
+    private VibrationProfileBuilderOpenHelper mDbOpenHelper;
+    private int mProfileId;
+    private Cursor mProfileCursor;
+    private int mProfileNamePos;
+    private int mProfileIntensityPos;
+    private int mProfileDelayPos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +63,8 @@ public class VibrationProfile extends AppCompatActivity {
         setContentView(R.layout.activity_vibration_profile);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        mDbOpenHelper = new VibrationProfileBuilderOpenHelper(this);
 
         //check if we're populating existing data, or if this is a new profile
         checkIntent();
@@ -57,16 +76,16 @@ public class VibrationProfile extends AppCompatActivity {
             restoreOriginalValues(savedInstanceState);
         }
 
-        textName = (EditText)findViewById(R.id.text_name);
-        textIntensity = (EditText)findViewById(R.id.text_intensity);
-        textDelay = (EditText)findViewById(R.id.text_delay);
+        mTextName = (EditText)findViewById(R.id.text_name);
+        mTextIntensity = (EditText)findViewById(R.id.text_intensity);
+        mTextDelay = (EditText)findViewById(R.id.text_delay);
 
         if(!mIsNewProfile)
-            displayProfile(textName, textIntensity, textDelay);
+            getLoaderManager().initLoader(LOADER_PROFILES, null, this);
 
 
         //validate inputs on text changed
-        textIntensity.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        mTextIntensity.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if (!hasFocus){
@@ -74,7 +93,7 @@ public class VibrationProfile extends AppCompatActivity {
                 }
             }
         });
-        textDelay.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        mTextDelay.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if (!hasFocus){
@@ -91,7 +110,7 @@ public class VibrationProfile extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //Generate vibration based on profile
-                if (textDelay.getText().toString().isEmpty() || textIntensity.getText().toString().isEmpty()){
+                if (mTextDelay.getText().toString().isEmpty() || mTextIntensity.getText().toString().isEmpty()){
                     Toast.makeText(getApplicationContext(), R.string.missing_inputs,
                             Toast.LENGTH_LONG).show();
                 } else {
@@ -101,17 +120,44 @@ public class VibrationProfile extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        mDbOpenHelper.close();
+        super.onDestroy();
+    }
+
+    private void loadProfileData() {
+        SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
+
+        String selection = ProfileInfoEntry._ID + " = ?";
+
+        String[] selectionArgs = {Integer.toString(mProfileId)};
+
+        String[] profileColumns = {
+                ProfileInfoEntry.COLUMN_PROFILE_NAME,
+                ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
+                ProfileInfoEntry.COLUMN_PROFILE_DELAY,
+        };
+        mProfileCursor = db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, selection,
+                selectionArgs, null, null, null);
+        mProfileNamePos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
+        mProfileIntensityPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
+        mProfileDelayPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
+        mProfileCursor.moveToNext(); //go to the first row of the query result
+        displayProfile();
+    }
+
     private void validateInputs(){
         //use regex to replace non numeric digits (excl ",")
         //also replace multiple delimiters
-        String text = textDelay.getText().toString();
+        String text = mTextDelay.getText().toString();
         text = text.replaceAll("[^\\d,]", ""); //remove all non numeric/","
         text = text.replaceAll("[,]{2,}",","); //remove duplicate ","
-        textDelay.setText(text);
+        mTextDelay.setText(text);
 
-        text = textIntensity.getText().toString();
+        text = mTextIntensity.getText().toString();
         text = text.replaceAll("[^\\d,]", "");
-        textIntensity.setText(text);
+        mTextIntensity.setText(text);
 
         //correct for max intensity 255
         List<Integer> intensity = new ArrayList<Integer>();
@@ -134,7 +180,7 @@ public class VibrationProfile extends AppCompatActivity {
             }
         }
         //convert back to csv String and set EditText value
-        textIntensity.setText(buildCsvString(intensity));
+        mTextIntensity.setText(buildCsvString(intensity));
 
     }
 
@@ -146,7 +192,7 @@ public class VibrationProfile extends AppCompatActivity {
                 sb.append(",");
         }
         /*  Java 8 not allowed
-        textIntensity.setText(intensity.stream()
+        mTextIntensity.setText(intensity.stream()
                 .map(i -> i.toString())
                 .collect(Collectors.joining(",")));
         */
@@ -162,11 +208,11 @@ public class VibrationProfile extends AppCompatActivity {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         //parse text inputs
         List<Long> delay = new ArrayList<Long>();
-        for (String s : textDelay.getText().toString().split(",")){
+        for (String s : mTextDelay.getText().toString().split(",")){
             delay.add(Long.parseLong(s));
         }
         List<Integer> intensity = new ArrayList<Integer>();
-        for (String s : textIntensity.getText().toString().split(",")){
+        for (String s : mTextIntensity.getText().toString().split(",")){
             intensity.add(Integer.parseInt(s));
         }
 
@@ -174,8 +220,8 @@ public class VibrationProfile extends AppCompatActivity {
         correctInputCountOffset(delay, intensity);
 
         //update Edit Text with trailing zeros
-        textIntensity.setText(buildCsvString(intensity));
-        textDelay.setText(buildCsvString(delay));
+        mTextIntensity.setText(buildCsvString(intensity));
+        mTextDelay.setText(buildCsvString(delay));
 
         //convert to primitive arrays
         long[] aDelay = new long[delay.size()];
@@ -220,28 +266,40 @@ public class VibrationProfile extends AppCompatActivity {
         mOriginalDelay = mProfile.getDelay();
     }
 
-    private void displayProfile(EditText textName, EditText textIntensity, EditText textDelay) {
-        textName.setText(mProfile.getName());
-        textIntensity.setText(mProfile.getIntensity());
-        textDelay.setText(mProfile.getDelay());
+    private void displayProfile() {
+        String profileName = mProfileCursor.getString(mProfileNamePos);
+        String profileIntensity = mProfileCursor.getString(mProfileIntensityPos);
+        String profileDelay = mProfileCursor.getString(mProfileDelayPos);
+        mTextName.setText(profileName);
+        mTextIntensity.setText(profileIntensity);
+        mTextDelay.setText(profileDelay);
     }
 
     private void checkIntent() {
         //If new profile, create one in DataManager.  If not, extract data from intent
         Intent intent = getIntent();
-        int position = intent.getIntExtra(PROFILE_POSITION, POSITION_NOT_SET);
-        mIsNewProfile = (position == POSITION_NOT_SET);
+        mProfileId = intent.getIntExtra(PROFILE_ID, ID_NOT_SET);
+        mIsNewProfile = (mProfileId == ID_NOT_SET);
         if (mIsNewProfile){
             createNewProfile();
-        } else {
-            mProfile = DataManager.getInstance().getProfiles().get(position);
         }
     }
 
     private void createNewProfile() {
-        DataManager dm = DataManager.getInstance();
-        mProfilePosition = dm.createNewProfile();
-        mProfile = dm.getProfiles().get(mProfilePosition);
+        final ContentValues values = new ContentValues();
+        values.put(ProfileInfoEntry.COLUMN_PROFILE_NAME, "");
+        values.put(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY, "");
+        values.put(ProfileInfoEntry.COLUMN_PROFILE_DELAY, "");
+
+        AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] objects) {
+                SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
+                mProfileId = (int) db.insert(ProfileInfoEntry.TABLE_NAME, null, values);
+                return null;
+            }
+        }.execute();
+
     }
 
     @Override
@@ -264,13 +322,28 @@ public class VibrationProfile extends AppCompatActivity {
         super.onPause();
         if(mIsCancelling){
             if(mIsNewProfile) {  //if cancelling on a new profile, delete the profile
-                DataManager.getInstance().removeProfile(mProfilePosition);
+                deleteProfileFromDatabase();
             } else {
                 restoreOldValues();  //cancelling on existing profile, restore previous values
             }
         } else {  //not cancelling, save the profile
             saveProfile();
         }
+    }
+
+    private void deleteProfileFromDatabase() {
+        final String selection = ProfileInfoEntry._ID + " = ?";
+        final String[] selectionArgs = {Integer.toString(mProfileId)};
+
+        AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] objects) {
+                SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
+                db.delete(ProfileInfoEntry.TABLE_NAME,selection,selectionArgs);
+                return null;
+            }
+        }.execute();
+
     }
 
     private void restoreOldValues() {
@@ -280,9 +353,31 @@ public class VibrationProfile extends AppCompatActivity {
     }
 
     private void saveProfile() {
-        mProfile.setName(textName.getText().toString());
-        mProfile.setIntensity(textIntensity.getText().toString());
-        mProfile.setDelay(textDelay.getText().toString());
+        String name = mTextName.getText().toString();
+        String intensity = mTextIntensity.getText().toString();
+        String delay = mTextDelay.getText().toString();
+        saveProfileToDatabase(name, intensity, delay);
+    }
+
+    private void saveProfileToDatabase(String name, String intensity, String delay){
+        final String selection = ProfileInfoEntry._ID + " = ?";
+        final String[] selectionArgs = {Integer.toString(mProfileId)};
+
+        final ContentValues values = new ContentValues();
+        values.put(ProfileInfoEntry.COLUMN_PROFILE_NAME, name);
+        values.put(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY, intensity);
+        values.put(ProfileInfoEntry.COLUMN_PROFILE_DELAY, delay);
+
+        AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] objects) {
+                SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
+                db.update(ProfileInfoEntry.TABLE_NAME, values, selection, selectionArgs);
+                return null;
+            }
+        }.execute();
+
+
     }
 
     @Override
@@ -321,20 +416,73 @@ public class VibrationProfile extends AppCompatActivity {
         mProfile = DataManager.getInstance().getProfiles().get(mProfilePosition);
 
         saveOriginalValues();
-        displayProfile(textName,textIntensity,textDelay);
+        displayProfile();
         //invalidateOptionsMenu so the system schedules a call to onPrepareOptionsMenu where we
         //disable "next" if we're on the last profile.
         invalidateOptionsMenu();
     }
 
     private void sendEmail() {
-        String subject = "Vibration Profile: " + textName.getText().toString();
-        String text = "Intensity: \n" + textIntensity.getText().toString() + "\n" +
-                "Delay: \n" + textDelay.getText().toString();
+        String subject = "Vibration Profile: " + mTextName.getText().toString();
+        String text = "Intensity: \n" + mTextIntensity.getText().toString() + "\n" +
+                "Delay: \n" + mTextDelay.getText().toString();
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setType("message/rfc2822"); //Mime type for Email
         intent.putExtra(Intent.EXTRA_SUBJECT, subject);
         intent.putExtra(Intent.EXTRA_TEXT, text);
         startActivity(intent);
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        CursorLoader loader = null;
+        if (id == LOADER_PROFILES)
+            loader = createLoaderProfiles();
+        return loader;
+    }
+
+    private CursorLoader createLoaderProfiles() {
+        return new CursorLoader(this) {
+            @Override
+            public Cursor loadInBackground() {
+                SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
+
+                String selection = ProfileInfoEntry._ID + " = ?";
+
+                String[] selectionArgs = {Integer.toString(mProfileId)};
+
+                String[] profileColumns = {
+                        ProfileInfoEntry.COLUMN_PROFILE_NAME,
+                        ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
+                        ProfileInfoEntry.COLUMN_PROFILE_DELAY,
+                };
+                return db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, selection,
+                        selectionArgs, null, null, null);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (loader.getId() == LOADER_PROFILES)
+            loadFinishedProfiles(data);
+    }
+
+    private void loadFinishedProfiles(Cursor data) {
+        mProfileCursor = data;
+        mProfileNamePos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
+        mProfileIntensityPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
+        mProfileDelayPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
+        mProfileCursor.moveToNext(); //go to the first row of the query result
+        displayProfile();
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        if (loader.getId() == LOADER_PROFILES) {
+            if(mProfileCursor != null)
+                mProfileCursor.close();
+        }
+
     }
 }

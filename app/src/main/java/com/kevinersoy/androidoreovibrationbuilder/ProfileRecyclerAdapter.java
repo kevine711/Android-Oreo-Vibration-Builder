@@ -2,13 +2,14 @@ package com.kevinersoy.androidoreovibrationbuilder;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.List;
+import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
 
 /**
  * Created by kevinersoy on 3/8/18.
@@ -17,13 +18,36 @@ import java.util.List;
 public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecyclerAdapter.ViewHolder> {
 
     private final Context mContext;
-    private final List<ProfileInfo> mProfiles;
+    private Cursor mCursor;
     private final LayoutInflater mLayoutInflater;
+    private int mProfileNamePos;
+    private int mProfileIntensityPos;
+    private int mProfileDelayPos;
+    private int mIdPos;
 
-    public ProfileRecyclerAdapter(Context context, List<ProfileInfo> profiles) {
+    public ProfileRecyclerAdapter(Context context, Cursor cursor) {
         mContext = context;
-        mProfiles = profiles;
+        mCursor = cursor;
         mLayoutInflater = LayoutInflater.from(mContext);
+        populateColumnPositions();
+    }
+
+    private void populateColumnPositions() {
+        if (mCursor == null)
+            return;
+        //Get column index from mCursor
+        mProfileNamePos = mCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
+        mProfileIntensityPos = mCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
+        mProfileDelayPos = mCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
+        mIdPos = mCursor.getColumnIndex(ProfileInfoEntry._ID);
+    }
+
+    public void changeCursor(Cursor cursor) {
+        if (mCursor != null)
+            mCursor.close();
+        mCursor = cursor;
+        populateColumnPositions();
+        notifyDataSetChanged();
     }
 
     @Override
@@ -34,16 +58,20 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        ProfileInfo profile = mProfiles.get(position);
-        holder.mTextName.setText(profile.getName());
-        holder.mTextIntensity.setText(profile.getIntensity());
-        holder.mTextDelay.setText(profile.getDelay());
-        holder.mCurrentPosition = position;
+        mCursor.moveToPosition(position);
+        String name = mCursor.getString(mProfileNamePos);
+        String intensity = mCursor.getString(mProfileIntensityPos);
+        String delay = mCursor.getString(mProfileDelayPos);
+        int id = mCursor.getInt(mIdPos);
+        holder.mTextName.setText(name);
+        holder.mTextIntensity.setText(intensity);
+        holder.mTextDelay.setText(delay);
+        holder.mId = id;
     }
 
     @Override
     public int getItemCount() {
-        return mProfiles.size();
+        return mCursor == null ? 0 : mCursor.getCount();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -51,7 +79,7 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
         public final TextView mTextName;
         public final TextView mTextIntensity;
         public final TextView mTextDelay;
-        public int mCurrentPosition;
+        public int mId;
 
         public ViewHolder(View itemView) {
             super(itemView);
@@ -64,7 +92,7 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
                 @Override
                 public void onClick(View v) {
                     Intent intent = new Intent(mContext, VibrationProfile.class);
-                    intent.putExtra(VibrationProfile.PROFILE_POSITION, mCurrentPosition);
+                    intent.putExtra(VibrationProfile.PROFILE_ID, mId);
                     mContext.startActivity(intent);
                 }
             });
