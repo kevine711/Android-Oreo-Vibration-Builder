@@ -54,19 +54,22 @@ public class VibrationProfileList extends AppCompatActivity {
 
     private void loadProfiles() {
         //Load profiles and set our adapter's cursor in background via AsyncTask
-        AsyncTask task = new AsyncTask() {
+        AsyncTask<Object, Integer, Cursor> task = new AsyncTask<Object, Integer, Cursor>() {
             @Override
-            protected Object doInBackground(Object[] objects) {
+            protected Cursor doInBackground(Object[] objects) {
                 SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
                 String[] profileColumns = {
                         ProfileInfoEntry.COLUMN_PROFILE_NAME,
                         ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
                         ProfileInfoEntry.COLUMN_PROFILE_DELAY,
                         ProfileInfoEntry._ID};
-                Cursor profileCursor = db.query(ProfileInfoEntry.TABLE_NAME, profileColumns,
+                return db.query(ProfileInfoEntry.TABLE_NAME, profileColumns,
                         null, null, null, null, null);
-                mProfileRecyclerAdapter.changeCursor(profileCursor);
-                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Cursor cursor) {
+                mProfileRecyclerAdapter.changeCursor(cursor);
             }
         }.execute();
 
