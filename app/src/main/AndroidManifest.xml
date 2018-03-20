@@ -2,8 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.kevinersoy.androidoreovibrationbuilder">
 
-
-    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
@@ -15,8 +14,7 @@
         <activity
             android:name=".VibrationProfile"
             android:label="@string/activity_vibration_profile"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity
             android:name=".VibrationProfileList"
             android:label="@string/app_name"
@@ -27,6 +25,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name=".VibrationBuilderProvider"
+            android:authorities="com.kevinersoy.androidoreovibrationbuilder.provider"
+            android:enabled="true"
+            android:exported="true"></provider>
     </application>
 
 </manifest>

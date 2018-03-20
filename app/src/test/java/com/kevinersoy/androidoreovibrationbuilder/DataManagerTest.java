@@ -23,7 +23,7 @@ public class DataManagerTest {
     public void setUp() throws Exception {
         //runs before each test
         sDataManager.getProfiles().clear();
-        sDataManager.initializeExampleProfiles();
+        //sDataManager.initializeExampleProfiles();
     }
 
     @Test

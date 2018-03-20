@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.VibrationEffect;
@@ -20,6 +21,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.kevinersoy.androidoreovibrationbuilder.VibrationBuilderProviderContract.Profiles;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,27 +127,6 @@ public class VibrationProfile extends AppCompatActivity
     protected void onDestroy() {
         mDbOpenHelper.close();
         super.onDestroy();
-    }
-
-    private void loadProfileData() {
-        SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
-
-        String selection = ProfileInfoEntry._ID + " = ?";
-
-        String[] selectionArgs = {Integer.toString(mProfileId)};
-
-        String[] profileColumns = {
-                ProfileInfoEntry.COLUMN_PROFILE_NAME,
-                ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
-                ProfileInfoEntry.COLUMN_PROFILE_DELAY,
-        };
-        mProfileCursor = db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, selection,
-                selectionArgs, null, null, null);
-        mProfileNamePos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
-        mProfileIntensityPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
-        mProfileDelayPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
-        mProfileCursor.moveToNext(); //go to the first row of the query result
-        displayProfile();
     }
 
     private void validateInputs(){
@@ -442,7 +424,19 @@ public class VibrationProfile extends AppCompatActivity
     }
 
     private CursorLoader createLoaderProfiles() {
-        return new CursorLoader(this) {
+        Uri uri = Profiles.CONTENT_URI; // VibrationBuilderProviderContract.Profiles
+        String[] profileColumns = {
+                Profiles.COLUMN_PROFILE_NAME,
+                Profiles.COLUMN_PROFILE_INTENSITY,
+                Profiles.COLUMN_PROFILE_DELAY,
+        };
+        String selection = ProfileInfoEntry._ID + " = ?";
+
+        String[] selectionArgs = {Integer.toString(mProfileId)};
+
+        return new CursorLoader(this, uri, profileColumns, selection, selectionArgs, Profiles._ID);
+
+        /*return new CursorLoader(this) {
             @Override
             public Cursor loadInBackground() {
                 SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
@@ -459,7 +453,7 @@ public class VibrationProfile extends AppCompatActivity
                 return db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, selection,
                         selectionArgs, null, null, null);
             }
-        };
+        };*/
     }
 
     @Override
