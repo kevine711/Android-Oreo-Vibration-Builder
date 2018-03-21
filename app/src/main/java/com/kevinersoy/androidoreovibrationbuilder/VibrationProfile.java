@@ -8,7 +8,6 @@ import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -320,18 +319,13 @@ public class VibrationProfile extends AppCompatActivity
     }
 
     private void deleteProfileFromDatabase() {
-        final String selection = ProfileInfoEntry._ID + " = ?";
-        final String[] selectionArgs = {Integer.toString(mProfileId)};
-
         AsyncTask task = new AsyncTask() {
             @Override
             protected Object doInBackground(Object[] objects) {
-                SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
-                db.delete(ProfileInfoEntry.TABLE_NAME,selection,selectionArgs);
+                getContentResolver().delete(mProfileUri,null,null);
                 return null;
             }
         }.execute();
-
     }
 
     private void restoreOldValues() {
@@ -348,9 +342,6 @@ public class VibrationProfile extends AppCompatActivity
     }
 
     private void saveProfileToDatabase(String name, String intensity, String delay){
-        final String selection = ProfileInfoEntry._ID + " = ?";
-        final String[] selectionArgs = {Integer.toString(mProfileId)};
-
         final ContentValues values = new ContentValues();
         values.put(ProfileInfoEntry.COLUMN_PROFILE_NAME, name);
         values.put(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY, intensity);
@@ -359,8 +350,7 @@ public class VibrationProfile extends AppCompatActivity
         AsyncTask task = new AsyncTask() {
             @Override
             protected Object doInBackground(Object[] objects) {
-                SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
-                db.update(ProfileInfoEntry.TABLE_NAME, values, selection, selectionArgs);
+                getContentResolver().update(mProfileUri, values, null, null);
                 return null;
             }
         }.execute();

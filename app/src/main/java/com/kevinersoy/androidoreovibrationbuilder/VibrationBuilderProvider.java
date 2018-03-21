@@ -1,6 +1,7 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
 import android.content.ContentProvider;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.UriMatcher;
@@ -14,6 +15,7 @@ import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabas
 public class VibrationBuilderProvider extends ContentProvider {
 
     private VibrationProfileBuilderOpenHelper mDbOpenHelper;
+    private static final String MIME_VENDOR_TYPE = "vnd." + VibrationBuilderProviderContract.AUTHORITY + ".";
 
     private static UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
@@ -35,15 +37,40 @@ public class VibrationBuilderProvider extends ContentProvider {
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
-        // Implement this to handle requests to delete one or more rows.
-        throw new UnsupportedOperationException("Not yet implemented");
+        long rowId = -1;
+        String rowSelection = null;
+        String[] rowSelectionArgs = null;
+        int nRows = -1;
+        SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
+        int uriMatch = sUriMatcher.match(uri);
+
+        switch(uriMatch){
+            case PROFILES:
+                nRows = db.delete(ProfileInfoEntry.TABLE_NAME, selection, selectionArgs);
+                break;
+            case PROFILE_ROW:
+                rowId = ContentUris.parseId(uri);
+                rowSelection = ProfileInfoEntry._ID + " = ?";
+                rowSelectionArgs = new String[]{Long.toString(rowId)};
+                nRows = db.delete(ProfileInfoEntry.TABLE_NAME, rowSelection, rowSelectionArgs);
+                break;
+        }
+        return nRows;
     }
 
     @Override
     public String getType(Uri uri) {
-        // TODO: Implement this to handle requests for the MIME type of the data
-        // at the given URI.
-        throw new UnsupportedOperationException("Not yet implemented");
+        String mimeType = null;
+        int uriMatch = sUriMatcher.match(uri);
+        switch(uriMatch){
+            case PROFILES:
+                mimeType = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + MIME_VENDOR_TYPE + Profiles.PATH;
+                break;
+            case PROFILE_ROW:
+                mimeType = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + MIME_VENDOR_TYPE + Profiles.PATH;
+                break;
+        }
+        return mimeType;
     }
 
     @Override
@@ -99,7 +126,24 @@ public class VibrationBuilderProvider extends ContentProvider {
     @Override
     public int update(Uri uri, ContentValues values, String selection,
                       String[] selectionArgs) {
-        // TODO: Implement this to handle requests to update one or more rows.
-        throw new UnsupportedOperationException("Not yet implemented");
+        long rowId = -1;
+        int nRows = -1;
+        String rowSelection = null;
+        String[] rowSelectionArgs = null;
+        SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
+
+        int uriMatch = sUriMatcher.match(uri);
+        switch(uriMatch){
+            case PROFILES:
+                nRows = db.update(ProfileInfoEntry.TABLE_NAME, values, selection, selectionArgs);
+                break;
+            case PROFILE_ROW:
+                rowId = ContentUris.parseId(uri);
+                rowSelection = ProfileInfoEntry._ID + " = ?";
+                rowSelectionArgs = new String[] {Long.toString(rowId)};
+                nRows = db.update(ProfileInfoEntry.TABLE_NAME, values, rowSelection, rowSelectionArgs);
+                break;
+        }
+        return nRows;
     }
 }
