@@ -436,24 +436,6 @@ public class VibrationProfile extends AppCompatActivity
 
         return new CursorLoader(this, uri, profileColumns, selection, selectionArgs, Profiles._ID);
 
-        /*return new CursorLoader(this) {
-            @Override
-            public Cursor loadInBackground() {
-                SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
-
-                String selection = ProfileInfoEntry._ID + " = ?";
-
-                String[] selectionArgs = {Integer.toString(mProfileId)};
-
-                String[] profileColumns = {
-                        ProfileInfoEntry.COLUMN_PROFILE_NAME,
-                        ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
-                        ProfileInfoEntry.COLUMN_PROFILE_DELAY,
-                };
-                return db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, selection,
-                        selectionArgs, null, null, null);
-            }
-        };*/
     }
 
     @Override
