@@ -1,6 +1,7 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
 import android.app.LoaderManager;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.CursorLoader;
@@ -59,6 +60,7 @@ public class VibrationProfile extends AppCompatActivity
     private int mProfileNamePos;
     private int mProfileIntensityPos;
     private int mProfileDelayPos;
+    private Uri mProfileUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -269,18 +271,22 @@ public class VibrationProfile extends AppCompatActivity
 
     private void createNewProfile() {
         final ContentValues values = new ContentValues();
-        values.put(ProfileInfoEntry.COLUMN_PROFILE_NAME, "");
-        values.put(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY, "");
-        values.put(ProfileInfoEntry.COLUMN_PROFILE_DELAY, "");
+        values.put(Profiles.COLUMN_PROFILE_NAME, "");
+        values.put(Profiles.COLUMN_PROFILE_INTENSITY, "");
+        values.put(Profiles.COLUMN_PROFILE_DELAY, "");
 
-        AsyncTask task = new AsyncTask() {
+        //use content resolver to insert row instead of accessing database directly.  Uri passed
+        //back is a Uri pointing to the new row.
+        mProfileUri = getContentResolver().insert(Profiles.CONTENT_URI, values);
+
+        /*AsyncTask task = new AsyncTask() {
             @Override
             protected Object doInBackground(Object[] objects) {
                 SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
                 mProfileId = (int) db.insert(ProfileInfoEntry.TABLE_NAME, null, values);
                 return null;
             }
-        }.execute();
+        }.execute();*/
 
     }
 
@@ -424,18 +430,14 @@ public class VibrationProfile extends AppCompatActivity
     }
 
     private CursorLoader createLoaderProfiles() {
-        Uri uri = Profiles.CONTENT_URI; // VibrationBuilderProviderContract.Profiles
         String[] profileColumns = {
                 Profiles.COLUMN_PROFILE_NAME,
                 Profiles.COLUMN_PROFILE_INTENSITY,
                 Profiles.COLUMN_PROFILE_DELAY,
         };
-        String selection = ProfileInfoEntry._ID + " = ?";
-
-        String[] selectionArgs = {Integer.toString(mProfileId)};
-
-        return new CursorLoader(this, uri, profileColumns, selection, selectionArgs, Profiles._ID);
-
+        mProfileUri = ContentUris.withAppendedId(Profiles.CONTENT_URI, mProfileId);
+        return new CursorLoader(this, mProfileUri, profileColumns,
+                null, null, null);
     }
 
     @Override

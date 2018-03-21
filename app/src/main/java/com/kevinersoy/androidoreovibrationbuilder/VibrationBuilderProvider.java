@@ -1,12 +1,14 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
 import android.content.ContentProvider;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 
+import com.kevinersoy.androidoreovibrationbuilder.VibrationBuilderProviderContract.Profiles;
 import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
 
 public class VibrationBuilderProvider extends ContentProvider {
@@ -17,9 +19,14 @@ public class VibrationBuilderProvider extends ContentProvider {
 
     public static final int PROFILES = 0;
 
+    private static final int PROFILE_ROW = 1;
+
     static{
         //use static initializer to make sure our matcher is set up before any requests come in
-        sUriMatcher.addURI(VibrationBuilderProviderContract.AUTHORITY, VibrationBuilderProviderContract.Profiles.PATH, PROFILES);
+        sUriMatcher.addURI(VibrationBuilderProviderContract.AUTHORITY, Profiles.PATH, PROFILES);
+        //append path # as a wildcard, supports any rowId
+        sUriMatcher.addURI(VibrationBuilderProviderContract.AUTHORITY, Profiles.PATH + "/#",
+                PROFILE_ROW);
         //add other URI's we want to look for in query
     }
 
@@ -41,8 +48,20 @@ public class VibrationBuilderProvider extends ContentProvider {
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
-        // TODO: Implement this to handle requests to insert a new row.
-        throw new UnsupportedOperationException("Not yet implemented");
+        SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
+        long rowId = -1;
+        Uri rowUri = null;
+        int uriMatch = sUriMatcher.match(uri);
+        switch(uriMatch){
+            case PROFILES:
+                rowId = db.insert(ProfileInfoEntry.TABLE_NAME, null, values);
+                // content://com.kevinersoy.androidoreovibrationbuilder.provider/profiles/1
+                rowUri = ContentUris.withAppendedId(Profiles.CONTENT_URI, rowId);
+                break;
+        }
+
+        //return the Uri of the newly inserted row
+        return rowUri;
     }
 
     @Override
@@ -62,6 +81,13 @@ public class VibrationBuilderProvider extends ContentProvider {
             case PROFILES:
                 cursor = db.query(ProfileInfoEntry.TABLE_NAME, projection, selection, selectionArgs,
                         null, null, sortOrder);
+                break;
+            case PROFILE_ROW:
+                long rowId = ContentUris.parseId(uri);
+                String rowSelection = ProfileInfoEntry._ID + " = ?";
+                String[] rowSelectionArgs = new String[]{Long.toString(rowId)};
+                cursor = db.query(ProfileInfoEntry.TABLE_NAME, null, rowSelection,
+                        rowSelectionArgs, null, null, null);
                 break;
             default:
                 throw new IllegalArgumentException("Uri not supported");
