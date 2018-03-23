@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -28,6 +29,8 @@ public class VibrationProfileList extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        enableStrictMode();
+
         //Create database open helper instance
         //If database didn't exist, create and add example profiles
         mDbOpenHelper = new VibrationProfileBuilderOpenHelper(this);
@@ -43,6 +46,16 @@ public class VibrationProfileList extends AppCompatActivity
         initializeContent();
     }
 
+    private void enableStrictMode() {
+        if(BuildConfig.DEBUG){
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build();
+            StrictMode.setThreadPolicy(policy);
+        }
+    }
+
     @Override
     protected void onDestroy() {
         mDbOpenHelper.close();
@@ -52,34 +65,10 @@ public class VibrationProfileList extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
-        //loadProfiles();
 
         getLoaderManager().initLoader(LOADER_PROFILES, null, this);
 
     }
-
-    /*private void loadProfiles() {
-        //Load profiles and set our adapter's cursor in background via AsyncTask
-        AsyncTask<Object, Integer, Cursor> task = new AsyncTask<Object, Integer, Cursor>() {
-            @Override
-            protected Cursor doInBackground(Object[] objects) {
-                SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
-                String[] profileColumns = {
-                        ProfileInfoEntry.COLUMN_PROFILE_NAME,
-                        ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
-                        ProfileInfoEntry.COLUMN_PROFILE_DELAY,
-                        ProfileInfoEntry._ID};
-                return db.query(ProfileInfoEntry.TABLE_NAME, profileColumns,
-                        null, null, null, null, null);
-            }
-
-            @Override
-            protected void onPostExecute(Cursor cursor) {
-                mProfileRecyclerAdapter.changeCursor(cursor);
-            }
-        }.execute();
-
-    }*/
 
     private void initializeContent() {
         //Tell DataManager to load the profiles from the database into the List<ProfileInfo> field

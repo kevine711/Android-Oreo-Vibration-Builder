@@ -71,6 +71,7 @@ public class VibrationProfile extends AppCompatActivity
         mDbOpenHelper = new VibrationProfileBuilderOpenHelper(this);
 
         //check if we're populating existing data, or if this is a new profile
+        //mProfileUri will get set here if new
         checkIntent();
 
         //save original values
@@ -84,6 +85,7 @@ public class VibrationProfile extends AppCompatActivity
         mTextIntensity = (EditText)findViewById(R.id.text_intensity);
         mTextDelay = (EditText)findViewById(R.id.text_delay);
 
+        //mProfileUri will get set here if profile already exists
         if(!mIsNewProfile)
             getLoaderManager().initLoader(LOADER_PROFILES, null, this);
 
@@ -276,16 +278,17 @@ public class VibrationProfile extends AppCompatActivity
 
         //use content resolver to insert row instead of accessing database directly.  Uri passed
         //back is a Uri pointing to the new row.
-        mProfileUri = getContentResolver().insert(Profiles.CONTENT_URI, values);
-
-        /*AsyncTask task = new AsyncTask() {
+        AsyncTask<ContentValues, Void, Uri> task = new AsyncTask<ContentValues, Void, Uri>() {
             @Override
-            protected Object doInBackground(Object[] objects) {
-                SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
-                mProfileId = (int) db.insert(ProfileInfoEntry.TABLE_NAME, null, values);
-                return null;
+            protected Uri doInBackground(ContentValues... contentValues) {
+                return getContentResolver().insert(Profiles.CONTENT_URI, contentValues[0]);
             }
-        }.execute();*/
+
+            @Override
+            protected void onPostExecute(Uri uri) {
+                mProfileUri = uri;
+            }
+        }.execute(values);
 
     }
 

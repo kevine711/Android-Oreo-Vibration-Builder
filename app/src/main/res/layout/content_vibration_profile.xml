@@ -57,4 +57,5 @@
         app:layout_constraintEnd_toEndOf="@+id/text_delay"
         app:layout_constraintStart_toStartOf="@+id/text_delay"
         app:layout_constraintTop_toBottomOf="@+id/text_delay" />
+
 </android.support.constraint.ConstraintLayout>

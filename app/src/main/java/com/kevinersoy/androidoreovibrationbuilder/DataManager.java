@@ -3,6 +3,7 @@ package com.kevinersoy.androidoreovibrationbuilder;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 
 import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
 
@@ -31,14 +32,25 @@ public class DataManager {
 
     public static void loadFromDatabase(VibrationProfileBuilderOpenHelper dbHelper) {
         //Query the database then load the profiles
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        String[] profileColumns = {ProfileInfoEntry.COLUMN_PROFILE_NAME,
-                ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
-                ProfileInfoEntry.COLUMN_PROFILE_DELAY,
-                ProfileInfoEntry._ID};
-        Cursor profileCursor = db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, null, null, null, null, null);
-        //profileCursor is now positioned before the first record
-        loadProfilesFromDatabase(profileCursor);
+        AsyncTask<VibrationProfileBuilderOpenHelper, Void, Cursor> task = new AsyncTask<VibrationProfileBuilderOpenHelper, Void, Cursor>() {
+            @Override
+            protected Cursor doInBackground(VibrationProfileBuilderOpenHelper... vibrationProfileBuilderOpenHelpers) {
+                SQLiteDatabase db =  vibrationProfileBuilderOpenHelpers[0].getReadableDatabase();
+                String[] profileColumns = {ProfileInfoEntry.COLUMN_PROFILE_NAME,
+                        ProfileInfoEntry.COLUMN_PROFILE_INTENSITY,
+                        ProfileInfoEntry.COLUMN_PROFILE_DELAY,
+                        ProfileInfoEntry._ID};
+                return db.query(ProfileInfoEntry.TABLE_NAME, profileColumns, null,
+                        null, null, null, null);
+                //profileCursor is now positioned before the first record
+            }
+
+            @Override
+            protected void onPostExecute(Cursor cursor) {
+                loadProfilesFromDatabase(cursor);
+            }
+        }.execute(dbHelper);
+
     }
 
     private static void loadProfilesFromDatabase(Cursor cursor) {
@@ -46,23 +58,35 @@ public class DataManager {
         //If our query changes later, these indices will still point to the correct columns.
         //Next, clear the profiles list, cycle through the query results and populate the profiles
         //list.
-        int profileNamePos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
-        int profileIntensityPos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
-        int profileDelayPos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
-        int idPos = cursor.getColumnIndex(ProfileInfoEntry._ID);
+        final int profileNamePos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
+        final int profileIntensityPos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
+        final int profileDelayPos = cursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
+        final int idPos = cursor.getColumnIndex(ProfileInfoEntry._ID);
 
         DataManager dm = getInstance();
         dm.mProfiles.clear();
-        while(cursor.moveToNext()){  //.moveToNext returns true if there was a next row to move to
-            String profileName = cursor.getString(profileNamePos);
-            String profileIntensity = cursor.getString(profileIntensityPos);
-            String profileDelay = cursor.getString(profileDelayPos);
-            int id = cursor.getInt(idPos);
-            ProfileInfo profile = new ProfileInfo(profileName, profileIntensity, profileDelay, id);
 
-            dm.mProfiles.add(profile);
-        }
-        cursor.close();
+        //disk reads below, do in background
+        AsyncTask<Object, Void, Void> task = new AsyncTask<Object, Void, Void>() {
+            @Override
+            protected Void doInBackground(Object... objects) {
+                DataManager dm = (DataManager)objects[0];
+                Cursor cursor = (Cursor)objects[1];
+                while(cursor.moveToNext()){  //.moveToNext returns true if there was a next row to move to
+                    String profileName = cursor.getString(profileNamePos);
+                    String profileIntensity = cursor.getString(profileIntensityPos);
+                    String profileDelay = cursor.getString(profileDelayPos);
+                    int id = cursor.getInt(idPos);
+                    ProfileInfo profile = new ProfileInfo(profileName, profileIntensity, profileDelay, id);
+
+                    dm.mProfiles.add(profile);
+                }
+                cursor.close();
+                return null;
+            }
+        }.execute(dm, cursor);
+
+
     }
 
     public List<ProfileInfo> getProfiles() {

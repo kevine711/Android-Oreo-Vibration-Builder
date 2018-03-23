@@ -64,10 +64,14 @@ public class VibrationBuilderProvider extends ContentProvider {
         int uriMatch = sUriMatcher.match(uri);
         switch(uriMatch){
             case PROFILES:
+                // this type returns multiple rows from our table
+                // vnd.android.cursor.dir/vnd.com.kevinersoy.androidoreovibrationbuilder.provider.profiles
                 mimeType = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + MIME_VENDOR_TYPE + Profiles.PATH;
                 break;
             case PROFILE_ROW:
-                mimeType = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + MIME_VENDOR_TYPE + Profiles.PATH;
+                // this type returns a signle row from our table
+                // vnd.android.cursor.item/vnd.com.kevinersoy.androidoreovibrationbuilder.provider.profiles
+                mimeType = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + MIME_VENDOR_TYPE + Profiles.PATH;
                 break;
         }
         return mimeType;

@@ -4,7 +4,8 @@ import android.net.Uri;
 import android.provider.BaseColumns;
 
 /**
- * Created by kevinersoy on 3/20/18.
+ * Contract for our provider.  Export as .jar or .lib if you want to let other apps make use of our
+ * constants when using our provider.
  */
 
 public final class VibrationBuilderProviderContract {
@@ -15,7 +16,7 @@ public final class VibrationBuilderProviderContract {
 
     public static final class Profiles implements BaseColumns, ProfilesColumns{
         public static final String PATH = "profiles";
-        // content://com.kevinersoy.androidoreovibrationbuilder.provider/courses
+        // content://com.kevinersoy.androidoreovibrationbuilder.provider/profiles
         public static final Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, PATH);
 
         /*if joining with another table, implement that table's Columns interface
