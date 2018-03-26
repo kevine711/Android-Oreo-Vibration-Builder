@@ -41,6 +41,7 @@ public class VibrationProfile extends AppCompatActivity
     public static final String ORIGINAL_PROFILE_NAME = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_NAME";
     public static final String ORIGINAL_PROFILE_INTENSITY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_INTENSITY";
     public static final String ORIGINAL_PROFILE_DELAY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_DELAY";
+    private static final String ORIGINAL_URI = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_URI";
     public static final int ID_NOT_SET = -1;
     public static final int LOADER_PROFILES = 0;
     private ProfileInfo mProfile = new ProfileInfo("", "", "");
@@ -243,6 +244,7 @@ public class VibrationProfile extends AppCompatActivity
         mOriginalName = savedInstanceState.getString(ORIGINAL_PROFILE_NAME);
         mOriginalIntensity = savedInstanceState.getString(ORIGINAL_PROFILE_INTENSITY);
         mOriginalDelay = savedInstanceState.getString(ORIGINAL_PROFILE_DELAY);
+        mProfileUri = Uri.parse(savedInstanceState.getString(ORIGINAL_URI));
     }
 
     private void saveOriginalValues() {
@@ -305,6 +307,7 @@ public class VibrationProfile extends AppCompatActivity
         outState.putString(ORIGINAL_PROFILE_NAME, mOriginalName);
         outState.putString(ORIGINAL_PROFILE_INTENSITY, mOriginalIntensity);
         outState.putString(ORIGINAL_PROFILE_DELAY, mOriginalDelay);
+        outState.putString(ORIGINAL_URI, mProfileUri.toString());
     }
 
     @Override
@@ -444,7 +447,7 @@ public class VibrationProfile extends AppCompatActivity
         mProfileNamePos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
         mProfileIntensityPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
         mProfileDelayPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
-        mProfileCursor.moveToNext(); //go to the first row of the query result
+        mProfileCursor.moveToFirst(); //go to the first row of the query result
         displayProfile();
     }
 
