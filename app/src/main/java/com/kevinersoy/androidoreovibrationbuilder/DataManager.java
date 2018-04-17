@@ -1,19 +1,24 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 
 import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by kevinersoy on 2/27/18.
  * This class will handle all the data.
  * Database communication, storage, loading example profiles
+ * Handle GUID generation
  */
 
 public class DataManager {
@@ -116,5 +121,25 @@ public class DataManager {
         profile.setDelay(profileDelay);
 
         return index;
+    }
+
+
+    //Get globally unique identifier
+    public String getGUID(Context context){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        String GUID = sharedPreferences.getString("GUID", "default");
+        if(GUID.equals("default")){
+            GUID = generateGUID();
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("GUID", GUID);
+            editor.apply();
+        }
+
+        return GUID;
+    }
+
+    //Generate globally unique identifier
+    private String generateGUID(){
+        return UUID.randomUUID().toString();
     }
 }

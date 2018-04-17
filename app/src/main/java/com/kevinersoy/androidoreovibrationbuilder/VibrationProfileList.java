@@ -35,6 +35,7 @@ public class VibrationProfileList extends AppCompatActivity
         //If database didn't exist, create and add example profiles
         mDbOpenHelper = new VibrationProfileBuilderOpenHelper(this);
 
+
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -66,7 +67,7 @@ public class VibrationProfileList extends AppCompatActivity
     protected void onResume() {
         super.onResume();
 
-        getLoaderManager().initLoader(LOADER_PROFILES, null, this);
+        getLoaderManager().restartLoader(LOADER_PROFILES, null, this);
 
     }
 

@@ -31,6 +31,10 @@
             android:authorities="com.kevinersoy.androidoreovibrationbuilder.provider"
             android:enabled="true"
             android:exported="true" />
+
+        <service
+            android:name=".ProfileSyncService"
+            android:exported="false"></service>
     </application>
 
 </manifest>
