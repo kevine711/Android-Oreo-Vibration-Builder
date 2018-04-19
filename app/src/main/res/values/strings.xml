@@ -25,4 +25,8 @@
 
     <string name="action_share">Share</string>
     <string name="action_reply">Reply</string>
+    <string name="upload">Upload</string>
+    <string name="uploadingtoserver">Uploading profiles to server</string>
+    <string name="restore">Restore</string>
+    <string name="restoringprofilesfromserver">Restoring profiles from the server</string>
 </resources>

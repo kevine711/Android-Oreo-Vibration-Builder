@@ -12,7 +12,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.kevinersoy.androidoreovibrationbuilder.VibrationBuilderProviderContract.Profiles;
 
@@ -55,6 +59,41 @@ public class VibrationProfileList extends AppCompatActivity
                     .build();
             StrictMode.setThreadPolicy(policy);
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_profile_list, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+        Log.d("VibrationProfileList", "Options item selected");
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_upload) {
+            upload();
+        } else if (id == R.id.action_restore){
+            restore();
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void restore() {
+        //Use intent service to restore all profiles from the server
+        Toast.makeText(this, getString(R.string.restoringprofilesfromserver), Toast.LENGTH_SHORT).show();
+        ProfileSyncService.startActionFetch(this, true);
+    }
+
+    private void upload() {
+        //Use intent service to upload all profiles to server
+        Toast.makeText(this, getString(R.string.uploadingtoserver), Toast.LENGTH_SHORT).show();
+        ProfileSyncService.startActionUpload(this, ProfileSyncService.ALL_PROFILES);
     }
 
     @Override
