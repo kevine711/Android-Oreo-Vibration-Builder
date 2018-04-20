@@ -7,6 +7,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
 import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
@@ -29,6 +30,7 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
     private int mProfileIntensityPos;
     private int mProfileDelayPos;
     private int mIdPos;
+    private int lastPosition = -1;
 
     public ProfileRecyclerAdapter(Context context, Cursor cursor) {
         //Constructor - set fields and get column indices
@@ -83,6 +85,14 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
         holder.mTextIntensity.setText(intensity);
         holder.mTextDelay.setText(delay);
         holder.mId = id;
+
+        setAnimation(holder.itemView, position);
+    }
+
+    private void setAnimation(View viewToAnimate, int position) {
+        viewToAnimate.startAnimation(
+                AnimationUtils.loadAnimation(mContext, (position > lastPosition) ? R.anim.up_from_bottom : R.anim.down_from_top));
+        lastPosition = position;
     }
 
     @Override
