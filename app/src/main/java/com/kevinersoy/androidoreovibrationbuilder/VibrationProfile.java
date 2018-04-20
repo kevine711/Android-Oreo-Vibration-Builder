@@ -1,10 +1,12 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
+import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.CursorLoader;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
@@ -387,8 +389,23 @@ public class VibrationProfile extends AppCompatActivity
         } else if (id == R.id.action_next) {
             moveNext();
         } else if (id == R.id.action_delete) {
-            mIsDeleting = true;
-            finish();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(getResources().getString(R.string.areyousure))
+                    .setTitle(getResources().getString(R.string.delete))
+                    .setCancelable(false)
+                    .setPositiveButton(getResources().getString(R.string.delete), new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            mIsDeleting = true;
+                            finish();
+                        }
+                    })
+                    .setNegativeButton(getResources().getString(R.string.cancel), new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                        }
+                    });
+            AlertDialog alert = builder.create();
+            alert.show();
         }
         return super.onOptionsItemSelected(item);
     }

@@ -30,4 +30,6 @@
     <string name="restore">Restore</string>
     <string name="restoringprofilesfromserver">Restoring profiles from the server</string>
     <string name="delete">Delete</string>
+    <string name="areyousure">Are you sure?</string>
+    <string name="cancel">Cancel</string>
 </resources>
