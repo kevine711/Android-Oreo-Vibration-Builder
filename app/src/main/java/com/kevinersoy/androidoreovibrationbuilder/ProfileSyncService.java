@@ -191,6 +191,8 @@ public class ProfileSyncService extends IntentService {
         } catch (IOException e) {
             e.printStackTrace();
             Log.e("ProfileSyncService", "OkHttp fetch request failed");
+        } catch (NullPointerException e) {
+            e.printStackTrace();
         }
 
         if(array != null) {

@@ -19,4 +19,10 @@
         android:id="@+id/action_send_mail"
         android:orderInCategory="103"
         android:title="@string/send_as_email" />
+    <item
+        android:id="@+id/action_delete"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:title="@string/delete"
+        android:orderInCategory="104"
+        app:showAsAction="ifRoom|withText" />
 </menu>

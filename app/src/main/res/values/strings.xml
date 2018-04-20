@@ -29,4 +29,5 @@
     <string name="uploadingtoserver">Uploading profiles to server</string>
     <string name="restore">Restore</string>
     <string name="restoringprofilesfromserver">Restoring profiles from the server</string>
+    <string name="delete">Delete</string>
 </resources>

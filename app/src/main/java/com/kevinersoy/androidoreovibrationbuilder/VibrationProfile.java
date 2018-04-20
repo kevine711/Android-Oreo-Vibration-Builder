@@ -51,6 +51,7 @@ public class VibrationProfile extends AppCompatActivity
     private EditText mTextDelay;
     private int mProfilePosition;
     private boolean mIsCancelling;
+    private boolean mIsDeleting;
     private String mOriginalName;
     private String mOriginalIntensity;
     private String mOriginalDelay;
@@ -61,6 +62,7 @@ public class VibrationProfile extends AppCompatActivity
     private int mProfileIntensityPos;
     private int mProfileDelayPos;
     private Uri mProfileUri;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -319,8 +321,12 @@ public class VibrationProfile extends AppCompatActivity
             } else {
                 restoreOldValues();  //cancelling on existing profile, restore previous values
             }
-        } else {  //not cancelling, save the profile
-            saveProfile();
+        } else {  //not cancelling, save the profile (unless deleting)
+            if(mIsDeleting){
+                deleteProfileFromDatabase();
+            } else {
+                saveProfile();
+            }
         }
     }
 
@@ -380,6 +386,9 @@ public class VibrationProfile extends AppCompatActivity
             finish();
         } else if (id == R.id.action_next) {
             moveNext();
+        } else if (id == R.id.action_delete) {
+            mIsDeleting = true;
+            finish();
         }
         return super.onOptionsItemSelected(item);
     }
