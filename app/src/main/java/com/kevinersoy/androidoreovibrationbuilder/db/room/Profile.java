@@ -2,12 +2,15 @@ package com.kevinersoy.androidoreovibrationbuilder.db.room;
 
 import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
+
+import com.kevinersoy.androidoreovibrationbuilder.DataManager;
 
 @Entity
 public class Profile {
 
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     private int id;
 
     @ColumnInfo(name = "name")
@@ -21,6 +24,16 @@ public class Profile {
 
     @ColumnInfo(name = "guid")
     private String guid;
+
+    @Ignore
+    public Profile(String name, String intestity, String delay, String guid){
+        this.name = name;
+        this.intensity = intestity;
+        this.delay = delay;
+        this.guid = guid;
+    }
+
+    public Profile(){}
 
     public int getId() {
         return id;

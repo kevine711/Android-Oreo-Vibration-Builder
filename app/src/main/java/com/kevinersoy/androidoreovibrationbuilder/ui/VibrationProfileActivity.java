@@ -17,6 +17,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,6 +26,8 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.kevinersoy.androidoreovibrationbuilder.DataManager;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.Profile;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.ProfileDao;
 import com.kevinersoy.androidoreovibrationbuilder.models.ProfileInfo;
 import com.kevinersoy.androidoreovibrationbuilder.R;
 import com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuilderProviderContract.Profiles;
@@ -32,6 +35,11 @@ import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpen
 
 import java.util.ArrayList;
 import java.util.List;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 import static com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
 
@@ -41,33 +49,31 @@ import static com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuil
  * 2/28 - Changing intent to pass position rather than actual profile since DataManager is singleton
  */
 
-public class VibrationProfileActivity extends AppCompatActivity
-        implements LoaderManager.LoaderCallbacks<Cursor>{
+public class VibrationProfileActivity extends AppCompatActivity {
+    public static final String TAG = VibrationProfileActivity.class.getSimpleName();
+
     public static final String PROFILE_ID = "com.kevinersoy.androidoreovibrationbuilder.PROFILE_ID";
     public static final String ORIGINAL_PROFILE_NAME = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_NAME";
     public static final String ORIGINAL_PROFILE_INTENSITY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_INTENSITY";
     public static final String ORIGINAL_PROFILE_DELAY = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_DELAY";
-    private static final String ORIGINAL_URI = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_URI";
+    public static final String ORIGINAL_PROFILE_GUID = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_GUID";
     public static final int ID_NOT_SET = -1;
-    public static final int LOADER_PROFILES = 0;
-    private ProfileInfo mProfile = new ProfileInfo("", "", "");
+
     private Boolean mIsNewProfile;
     private EditText mTextName;
     private EditText mTextIntensity;
     private EditText mTextDelay;
-    private int mProfilePosition;
     private boolean mIsCancelling;
     private boolean mIsDeleting;
     private String mOriginalName;
     private String mOriginalIntensity;
     private String mOriginalDelay;
-    private VibrationProfileBuilderOpenHelper mDbOpenHelper;
-    private int mProfileId;
-    private Cursor mProfileCursor;
-    private int mProfileNamePos;
-    private int mProfileIntensityPos;
-    private int mProfileDelayPos;
-    private Uri mProfileUri;
+    private String mOriginalGuid;
+    private Integer mProfileId;
+
+    private ProfileDao mProfileDao;
+    private final CompositeDisposable mDisposable = new CompositeDisposable();
+    private Profile mProfile;
 
 
     @Override
@@ -77,27 +83,25 @@ public class VibrationProfileActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mDbOpenHelper = new VibrationProfileBuilderOpenHelper(this);
-
-        //check if we're populating existing data, or if this is a new profile
-        //mProfileUri will get set here if new
-        checkIntent();
-
-        //save original values
-        if (savedInstanceState == null) {
-            saveOriginalValues();
-        } else {
-            restoreOriginalValues(savedInstanceState);
-        }
+        mProfileDao = DataManager.getInstance().getDB(getApplicationContext()).profileDao();
 
         mTextName = (EditText)findViewById(R.id.text_name);
         mTextIntensity = (EditText)findViewById(R.id.text_intensity);
         mTextDelay = (EditText)findViewById(R.id.text_delay);
 
-        //mProfileUri will get set here if profile already exists
-        if(!mIsNewProfile)
-            getLoaderManager().initLoader(LOADER_PROFILES, null, this);
-
+        //save original values and update UI, mProfile will get set by updateView()
+        if (savedInstanceState == null) {
+            saveOriginalValues();
+            checkIntent(); // will call updateView with new id if new, otherwise existing id
+        } else {
+            restoreOriginalValues(savedInstanceState);
+            if(mProfileId == null){
+                // Activity refreshed before new profile could be created
+                checkIntent();
+            } else {
+                updateView(mProfileId);
+            }
+        }
 
         //validate inputs on text changed
         mTextIntensity.setOnFocusChangeListener(new View.OnFocusChangeListener() {
@@ -117,8 +121,6 @@ public class VibrationProfileActivity extends AppCompatActivity
             }
         });
 
-
-
         //set up onClick listener for Run button
         Button mButton = (Button)findViewById(R.id.button_run);
         mButton.setOnClickListener(new View.OnClickListener() {
@@ -136,9 +138,9 @@ public class VibrationProfileActivity extends AppCompatActivity
     }
 
     @Override
-    protected void onDestroy() {
-        mDbOpenHelper.close();
-        super.onDestroy();
+    protected void onStop() {
+        super.onStop();
+        mDisposable.clear();
     }
 
     private void validateInputs(){
@@ -190,11 +192,6 @@ public class VibrationProfileActivity extends AppCompatActivity
             if (i != list.size()-1)
                 sb.append(",");
         }
-        /*  Java 8 not allowed
-        mTextIntensity.setText(intensity.stream()
-                .map(i -> i.toString())
-                .collect(Collectors.joining(",")));
-        */
         return sb.toString();
     }
 
@@ -257,22 +254,14 @@ public class VibrationProfileActivity extends AppCompatActivity
         mOriginalName = savedInstanceState.getString(ORIGINAL_PROFILE_NAME);
         mOriginalIntensity = savedInstanceState.getString(ORIGINAL_PROFILE_INTENSITY);
         mOriginalDelay = savedInstanceState.getString(ORIGINAL_PROFILE_DELAY);
-        mProfileUri = Uri.parse(savedInstanceState.getString(ORIGINAL_URI));
+        mOriginalGuid = savedInstanceState.getString(ORIGINAL_PROFILE_GUID);
     }
 
     private void saveOriginalValues() {
         mOriginalName = mProfile.getName();
         mOriginalIntensity = mProfile.getIntensity();
         mOriginalDelay = mProfile.getDelay();
-    }
-
-    private void displayProfile() {
-        String profileName = mProfileCursor.getString(mProfileNamePos);
-        String profileIntensity = mProfileCursor.getString(mProfileIntensityPos);
-        String profileDelay = mProfileCursor.getString(mProfileDelayPos);
-        mTextName.setText(profileName);
-        mTextIntensity.setText(profileIntensity);
-        mTextDelay.setText(profileDelay);
+        mOriginalGuid = mProfile.getGuid();
     }
 
     private void checkIntent() {
@@ -282,29 +271,40 @@ public class VibrationProfileActivity extends AppCompatActivity
         mIsNewProfile = (mProfileId == ID_NOT_SET);
         if (mIsNewProfile){
             createNewProfile();
+        } else {
+            updateView(mProfileId);
         }
     }
 
     private void createNewProfile() {
-        final ContentValues values = new ContentValues();
-        values.put(Profiles.COLUMN_PROFILE_NAME, "");
-        values.put(Profiles.COLUMN_PROFILE_INTENSITY, "");
-        values.put(Profiles.COLUMN_PROFILE_DELAY, "");
+        mDisposable.add(mProfileDao.insert(new Profile())
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(result -> updateView(result.intValue()),
+                        throwable -> Log.e(TAG, "Unable to update list", throwable))
+        );
+    }
 
-        //use content resolver to insert row instead of accessing database directly.  Uri passed
-        //back is a Uri pointing to the new row.
-        AsyncTask<ContentValues, Void, Uri> task = new AsyncTask<ContentValues, Void, Uri>() {
-            @Override
-            protected Uri doInBackground(ContentValues... contentValues) {
-                return getContentResolver().insert(Profiles.CONTENT_URI, contentValues[0]);
+    private void updateView(int profileId) {
+        mProfileId = profileId; // Set in case it was just created
+        mDisposable.add(mProfileDao.findById(mProfileId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::updateView) // calls overload with Profile instance returned from DB
+        );
+    }
+
+    private void updateView(Profile profile){
+        mProfile = profile;
+        if(mProfile != null){
+            mTextName.setText(mProfile.getName());
+            mTextDelay.setText(mProfile.getName());
+            mTextIntensity.setText(mProfile.getIntensity());
+            mProfileId = mProfile.getId();
+            if(mProfile.getGuid() == null){
+                mProfile.setGuid(DataManager.getInstance().getGUID(this));
             }
-
-            @Override
-            protected void onPostExecute(Uri uri) {
-                mProfileUri = uri;
-            }
-        }.execute(values);
-
+        }
     }
 
     @Override
@@ -320,7 +320,7 @@ public class VibrationProfileActivity extends AppCompatActivity
         outState.putString(ORIGINAL_PROFILE_NAME, mOriginalName);
         outState.putString(ORIGINAL_PROFILE_INTENSITY, mOriginalIntensity);
         outState.putString(ORIGINAL_PROFILE_DELAY, mOriginalDelay);
-        outState.putString(ORIGINAL_URI, mProfileUri.toString());
+        outState.putString(ORIGINAL_PROFILE_GUID, mOriginalGuid);
     }
 
     @Override
@@ -342,19 +342,16 @@ public class VibrationProfileActivity extends AppCompatActivity
     }
 
     private void deleteProfileFromDatabase() {
-        AsyncTask task = new AsyncTask() {
-            @Override
-            protected Object doInBackground(Object[] objects) {
-                getContentResolver().delete(mProfileUri,null,null);
-                return null;
-            }
-        }.execute();
+        mProfileDao.delete(mProfile)
+                .subscribeOn(Schedulers.io()
+        );
     }
 
     private void restoreOldValues() {
         mProfile.setName(mOriginalName);
         mProfile.setIntensity(mOriginalIntensity);
         mProfile.setDelay(mOriginalDelay);
+        mProfile.setGuid(mOriginalGuid);
     }
 
     private void saveProfile() {
@@ -365,20 +362,9 @@ public class VibrationProfileActivity extends AppCompatActivity
     }
 
     private void saveProfileToDatabase(String name, String intensity, String delay){
-        final ContentValues values = new ContentValues();
-        values.put(ProfileInfoEntry.COLUMN_PROFILE_NAME, name);
-        values.put(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY, intensity);
-        values.put(ProfileInfoEntry.COLUMN_PROFILE_DELAY, delay);
-
-        AsyncTask task = new AsyncTask() {
-            @Override
-            protected Object doInBackground(Object[] objects) {
-                getContentResolver().update(mProfileUri, values, null, null);
-                return null;
-            }
-        }.execute();
-
-
+        mProfileDao.insert(mProfile)
+                .subscribeOn(Schedulers.io()
+        );
     }
 
     @Override
@@ -395,8 +381,6 @@ public class VibrationProfileActivity extends AppCompatActivity
         } else if (id == R.id.action_cancel) { //cancel, don't save
             mIsCancelling = true;
             finish();
-        } else if (id == R.id.action_next) {
-            moveNext();
         } else if (id == R.id.action_delete) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage(getResources().getString(R.string.areyousure))
@@ -419,28 +403,6 @@ public class VibrationProfileActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        //disable "next" from options menu when on the last profile
-        //system schedules a call to this method after we invalidateOptionsMenu in moveNext
-        MenuItem item = menu.findItem(R.id.action_next);
-        int lastProfileIndex = DataManager.getInstance().getProfiles().size() - 1;
-        item.setEnabled(lastProfileIndex > mProfilePosition);
-        return super.onPrepareOptionsMenu(menu);
-    }
-
-    private void moveNext() {
-        //move to the next profile in the list
-        ++mProfilePosition;
-        mProfile = DataManager.getInstance().getProfiles().get(mProfilePosition);
-
-        saveOriginalValues();
-        displayProfile();
-        //invalidateOptionsMenu so the system schedules a call to onPrepareOptionsMenu where we
-        //disable "next" if we're on the last profile.
-        invalidateOptionsMenu();
-    }
-
     private void sendEmail() {
         String subject = "Vibration Profile: " + mTextName.getText().toString();
         String text = "Intensity: \n" + mTextIntensity.getText().toString() + "\n" +
@@ -452,46 +414,4 @@ public class VibrationProfileActivity extends AppCompatActivity
         startActivity(intent);
     }
 
-    @Override
-    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        CursorLoader loader = null;
-        if (id == LOADER_PROFILES)
-            loader = createLoaderProfiles();
-        return loader;
-    }
-
-    private CursorLoader createLoaderProfiles() {
-        String[] profileColumns = {
-                Profiles.COLUMN_PROFILE_NAME,
-                Profiles.COLUMN_PROFILE_INTENSITY,
-                Profiles.COLUMN_PROFILE_DELAY,
-        };
-        mProfileUri = ContentUris.withAppendedId(Profiles.CONTENT_URI, mProfileId);
-        return new CursorLoader(this, mProfileUri, profileColumns,
-                null, null, null);
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        if (loader.getId() == LOADER_PROFILES)
-            loadFinishedProfiles(data);
-    }
-
-    private void loadFinishedProfiles(Cursor data) {
-        mProfileCursor = data;
-        mProfileNamePos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
-        mProfileIntensityPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
-        mProfileDelayPos = mProfileCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
-        mProfileCursor.moveToFirst(); //go to the first row of the query result
-        displayProfile();
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-        if (loader.getId() == LOADER_PROFILES) {
-            if(mProfileCursor != null)
-                mProfileCursor.close();
-        }
-
-    }
 }

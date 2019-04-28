@@ -3,27 +3,35 @@ package com.kevinersoy.androidoreovibrationbuilder.db.room;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
+import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
 import android.arch.persistence.room.Update;
 
 import java.util.List;
 
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+
 @Dao
 public interface ProfileDao {
 
     @Query("SELECT * FROM profile")
-    List<Profile> getAll();
+    Flowable<List<Profile>> getProfiles();
 
     @Query("SELECT * FROM profile WHERE id LIKE :id LIMIT 1")
-    Profile findById(int id);
+    Flowable<Profile> findById(int id);
 
-    @Insert
-    void insertAll(List<Profile> profiles);
+    @Query("SELECT COUNT(name) FROM profile")
+    Flowable<Integer> getSize();
 
-    @Update
-    void update(Profile profile);
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    Completable insertAll(List<Profile> profiles);
+
+    // Insert profile.  If Profile exists, replace it.
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    Flowable<Long> insert(Profile profile);
 
     @Delete
-    void delete(Profile profile);
+    Completable delete(Profile profile);
 
 }

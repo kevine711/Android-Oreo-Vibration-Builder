@@ -1,6 +1,8 @@
 package com.kevinersoy.androidoreovibrationbuilder.ui;
 
 import android.app.LoaderManager;
+import android.arch.lifecycle.ViewModelProvider;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
@@ -22,14 +24,24 @@ import com.kevinersoy.androidoreovibrationbuilder.BuildConfig;
 import com.kevinersoy.androidoreovibrationbuilder.DataManager;
 import com.kevinersoy.androidoreovibrationbuilder.ProfileSyncService;
 import com.kevinersoy.androidoreovibrationbuilder.R;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.LocalProfileDataSource;
 import com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuilderProviderContract.Profiles;
 import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpenHelper;
 
-public class VibrationProfileListActivity extends AppCompatActivity
-            implements LoaderManager.LoaderCallbacks<Cursor>{
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
+
+public class VibrationProfileListActivity extends AppCompatActivity {
+
+    public static final String TAG = VibrationProfileListActivity.class.getSimpleName();
+
     private ProfileRecyclerAdapter mProfileRecyclerAdapter;
-    private VibrationProfileBuilderOpenHelper mDbOpenHelper;
-    public static final int LOADER_PROFILES = 0;
+
+    // Adding architecture components
+    private ViewModelFactory mViewModelFactory;
+    private ProfileListViewModel mProfileListViewModel;
+    private final CompositeDisposable mDisposable = new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,20 +52,35 @@ public class VibrationProfileListActivity extends AppCompatActivity
 
         enableStrictMode();
 
-        //Create database open helper instance
-        //If database didn't exist, create and add example profiles
-        mDbOpenHelper = new VibrationProfileBuilderOpenHelper(this);
+        // Architecture added
+        mViewModelFactory = new ViewModelFactory(
+                new LocalProfileDataSource(
+                        DataManager.getInstance().getDB(getApplicationContext()).profileDao()
+                )
+        );
+        mProfileListViewModel = ViewModelProviders.of(this, mViewModelFactory).get(ProfileListViewModel.class);
 
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(VibrationProfileListActivity.this, VibrationProfileActivity.class));
-            }
-        });
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(view -> startActivity(new Intent(VibrationProfileListActivity.this, VibrationProfileActivity.class)));
 
         initializeContent();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mDisposable.add(mProfileListViewModel.getProfiles()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(profiles -> mProfileRecyclerAdapter.updateList(profiles),
+                        throwable -> Log.e(TAG, "Unable to update list", throwable)));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mDisposable.clear();
     }
 
     private void enableStrictMode() {
@@ -103,7 +130,6 @@ public class VibrationProfileListActivity extends AppCompatActivity
 
     @Override
     protected void onDestroy() {
-        mDbOpenHelper.close();
         super.onDestroy();
     }
 
@@ -111,14 +137,9 @@ public class VibrationProfileListActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
 
-        getLoaderManager().restartLoader(LOADER_PROFILES, null, this);
-
     }
 
     private void initializeContent() {
-        //Tell DataManager to load the profiles from the database into the List<ProfileInfo> field
-        DataManager.loadFromDatabase(mDbOpenHelper);
-
         //Set up RecyclerView with a layout manager
         final RecyclerView recyclerProfiles = (RecyclerView) findViewById(R.id.list_profiles);
         final LinearLayoutManager profilesLayoutManager = new LinearLayoutManager(this);
@@ -133,34 +154,5 @@ public class VibrationProfileListActivity extends AppCompatActivity
     }
 
 
-    @Override
-    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        CursorLoader loader = null;
-        if(id == LOADER_PROFILES) {
-            final String[] profileColumns = {
-                    Profiles._ID,
-                    Profiles.COLUMN_PROFILE_NAME,
-                    Profiles.COLUMN_PROFILE_INTENSITY,
-                    Profiles.COLUMN_PROFILE_DELAY
-            };
-            loader = new CursorLoader(this, Profiles.CONTENT_URI, profileColumns,
-                    null, null, null);
-        }
-        return loader;
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        if(loader.getId() == LOADER_PROFILES){
-            mProfileRecyclerAdapter.changeCursor(data);
-        }
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-        if(loader.getId() == LOADER_PROFILES){
-            mProfileRecyclerAdapter.changeCursor(null);
-        }
-    }
 }
 

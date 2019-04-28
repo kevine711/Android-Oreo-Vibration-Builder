@@ -12,6 +12,9 @@ import android.widget.TextView;
 
 import com.kevinersoy.androidoreovibrationbuilder.R;
 import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.Profile;
+
+import java.util.List;
 
 /**
  * Created by kevinersoy on 3/8/18.
@@ -25,39 +28,19 @@ import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderData
 public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecyclerAdapter.ViewHolder> {
 
     private final Context mContext;
-    private Cursor mCursor;
+    private List<Profile> mProfiles;
     private final LayoutInflater mLayoutInflater;
-    private int mProfileNamePos;
-    private int mProfileIntensityPos;
-    private int mProfileDelayPos;
-    private int mIdPos;
     private int lastPosition = -1;
 
-    public ProfileRecyclerAdapter(Context context, Cursor cursor) {
+    public ProfileRecyclerAdapter(Context context, List<Profile> profiles) {
         //Constructor - set fields and get column indices
         mContext = context;
-        mCursor = cursor;
+        mProfiles = profiles;
         mLayoutInflater = LayoutInflater.from(mContext);
-        populateColumnPositions();
     }
 
-    private void populateColumnPositions() {
-        if (mCursor == null)
-            return;
-        //Get column index from mCursor
-        mProfileNamePos = mCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_NAME);
-        mProfileIntensityPos = mCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_INTENSITY);
-        mProfileDelayPos = mCursor.getColumnIndex(ProfileInfoEntry.COLUMN_PROFILE_DELAY);
-        mIdPos = mCursor.getColumnIndex(ProfileInfoEntry._ID);
-    }
-
-    public void changeCursor(Cursor cursor) {
-        //Allow instance to update the cursor.  Close existing cursor first.
-        //Notify super class the data set changed
-        if (mCursor != null)
-            mCursor.close();
-        mCursor = cursor;
-        populateColumnPositions(); //new cursor, need to reset column positions
+    public void updateList(List<Profile> profiles){
+        mProfiles = profiles;
         notifyDataSetChanged();
     }
 
@@ -73,19 +56,12 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
     public void onBindViewHolder(ViewHolder holder, int position) {
         //Binding data to the ViewHolder
         /*
-            Move the cursor the the position requested.
-            Populate local variables with required cursor.get methods
-            Set holder fields with this data
+            Set holder fields with data from the list
          */
-        mCursor.moveToPosition(position);
-        String name = mCursor.getString(mProfileNamePos);
-        String intensity = mCursor.getString(mProfileIntensityPos);
-        String delay = mCursor.getString(mProfileDelayPos);
-        int id = mCursor.getInt(mIdPos);
-        holder.mTextName.setText(name);
-        holder.mTextIntensity.setText(intensity);
-        holder.mTextDelay.setText(delay);
-        holder.mId = id;
+        holder.mTextName.setText(mProfiles.get(position).getName());
+        holder.mTextIntensity.setText(mProfiles.get(position).getIntensity());
+        holder.mTextDelay.setText(mProfiles.get(position).getDelay());
+        holder.mId = mProfiles.get(position).getId();
 
         setAnimation(holder.itemView, position);
     }
@@ -98,7 +74,7 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
 
     @Override
     public int getItemCount() {
-        return mCursor == null ? 0 : mCursor.getCount();
+        return mProfiles == null ? 0 : mProfiles.size();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
