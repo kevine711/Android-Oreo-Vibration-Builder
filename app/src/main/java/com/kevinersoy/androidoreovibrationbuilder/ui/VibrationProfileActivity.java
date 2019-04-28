@@ -36,6 +36,8 @@ import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpen
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Completable;
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;
@@ -258,10 +260,10 @@ public class VibrationProfileActivity extends AppCompatActivity {
     }
 
     private void saveOriginalValues() {
-        mOriginalName = mProfile.getName();
-        mOriginalIntensity = mProfile.getIntensity();
-        mOriginalDelay = mProfile.getDelay();
-        mOriginalGuid = mProfile.getGuid();
+        mOriginalName = mProfile == null ? null : mProfile.getName();
+        mOriginalIntensity = mProfile == null ? null : mProfile.getIntensity();
+        mOriginalDelay = mProfile == null ? null : mProfile.getDelay();
+        mOriginalGuid = mProfile == null ? null : mProfile.getGuid();
     }
 
     private void checkIntent() {
@@ -277,12 +279,12 @@ public class VibrationProfileActivity extends AppCompatActivity {
     }
 
     private void createNewProfile() {
-        mDisposable.add(mProfileDao.insert(new Profile())
+        Observable.fromCallable(() -> mProfileDao.insert(new Profile()))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(result -> updateView(result.intValue()),
-                        throwable -> Log.e(TAG, "Unable to update list", throwable))
-        );
+                        throwable -> Log.e(TAG, "Unable to update list", throwable));
+
     }
 
     private void updateView(int profileId) {
@@ -296,6 +298,7 @@ public class VibrationProfileActivity extends AppCompatActivity {
 
     private void updateView(Profile profile){
         mProfile = profile;
+        Log.d(TAG, "Profile Name : " + mProfile.getName());
         if(mProfile != null){
             mTextName.setText(mProfile.getName());
             mTextDelay.setText(mProfile.getName());
@@ -342,9 +345,9 @@ public class VibrationProfileActivity extends AppCompatActivity {
     }
 
     private void deleteProfileFromDatabase() {
-        mProfileDao.delete(mProfile)
-                .subscribeOn(Schedulers.io()
-        );
+        Completable.fromAction(() -> mProfileDao.delete(mProfile))
+                .subscribeOn(Schedulers.io())
+                .subscribe(() -> Log.d(TAG, "Finished Delete"));
     }
 
     private void restoreOldValues() {
@@ -355,16 +358,16 @@ public class VibrationProfileActivity extends AppCompatActivity {
     }
 
     private void saveProfile() {
-        String name = mTextName.getText().toString();
-        String intensity = mTextIntensity.getText().toString();
-        String delay = mTextDelay.getText().toString();
-        saveProfileToDatabase(name, intensity, delay);
+        mProfile.setName(mTextName.getText().toString());
+        mProfile.setIntensity(mTextIntensity.getText().toString());
+        mProfile.setDelay(mTextDelay.getText().toString());
+        saveProfileToDatabase();
     }
 
-    private void saveProfileToDatabase(String name, String intensity, String delay){
-        mProfileDao.insert(mProfile)
-                .subscribeOn(Schedulers.io()
-        );
+    private void saveProfileToDatabase(){
+        Completable.fromAction(() -> mProfileDao.insert(mProfile))
+                .subscribeOn(Schedulers.io())
+                .subscribe(() -> Log.d(TAG, "Finished Save : " + mProfile.getName()));
     }
 
     @Override

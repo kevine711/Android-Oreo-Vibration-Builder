@@ -25,13 +25,13 @@ public interface ProfileDao {
     Flowable<Integer> getSize();
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    Completable insertAll(List<Profile> profiles);
+    List<Long> insertAll(List<Profile> profiles);
 
     // Insert profile.  If Profile exists, replace it.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    Flowable<Long> insert(Profile profile);
+    Long insert(Profile profile);
 
     @Delete
-    Completable delete(Profile profile);
+    void delete(Profile profile);
 
 }

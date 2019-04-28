@@ -28,7 +28,7 @@ public class ProfileListViewModel extends ViewModel {
                 });
     }
 
-    public Completable updateProfiles(final List<Profile> profiles){
+    public List<Long> updateProfiles(final List<Profile> profiles){
         mProfiles = profiles;
         return mDataSource.insertOrUpdateAll(profiles);
     }

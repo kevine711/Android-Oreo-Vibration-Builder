@@ -26,18 +26,18 @@ public class LocalProfileDataSource implements ProfileDataSource {
     }
 
     @Override
-    public Flowable<Long> insertOrUpdateProfile(Profile profile) {
+    public Long insertOrUpdateProfile(Profile profile) {
         return mProfileDao.insert(profile);
     }
 
     @Override
-    public Completable insertOrUpdateAll(List<Profile> profiles) {
+    public List<Long> insertOrUpdateAll(List<Profile> profiles) {
         return mProfileDao.insertAll(profiles);
     }
 
     @Override
-    public Completable delete(Profile profile) {
-        return mProfileDao.delete(profile);
+    public void delete(Profile profile) {
+        mProfileDao.delete(profile);
     }
 
     @Override

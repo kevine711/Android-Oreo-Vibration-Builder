@@ -51,14 +51,14 @@ public class DataManager {
         }
         if(database == null){
             database = Room.databaseBuilder(appContext, MyDatabase.class, DATABASE_NAME)
-                    .addCallback(new RoomDatabase.Callback() {
+                    /*.addCallback(new RoomDatabase.Callback() {
                         @Override
                         public void onCreate(@NonNull SupportSQLiteDatabase db) {
                             super.onCreate(db);
                             getInstance().getDB(appContext).profileDao().insertAll(ExampleProfiles.getAll());
                         }
                     })
-                    .build();
+                    */.build();
         }
         return database;
     }

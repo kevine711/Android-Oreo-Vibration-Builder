@@ -24,10 +24,16 @@ import com.kevinersoy.androidoreovibrationbuilder.BuildConfig;
 import com.kevinersoy.androidoreovibrationbuilder.DataManager;
 import com.kevinersoy.androidoreovibrationbuilder.ProfileSyncService;
 import com.kevinersoy.androidoreovibrationbuilder.R;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.ExampleProfiles;
 import com.kevinersoy.androidoreovibrationbuilder.db.room.LocalProfileDataSource;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.Profile;
 import com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuilderProviderContract.Profiles;
 import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpenHelper;
 
+import java.util.List;
+
+import io.reactivex.Completable;
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
@@ -73,8 +79,19 @@ public class VibrationProfileListActivity extends AppCompatActivity {
         mDisposable.add(mProfileListViewModel.getProfiles()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(profiles -> mProfileRecyclerAdapter.updateList(profiles),
+                .subscribe(this::updateRecyclerAdapter,
                         throwable -> Log.e(TAG, "Unable to update list", throwable)));
+    }
+
+    private void updateRecyclerAdapter(List<Profile> profiles){
+        if(profiles.size() == 0){
+            Completable.fromAction(() -> DataManager.getInstance()
+                    .getDB(getApplicationContext()).profileDao()
+                    .insertAll(ExampleProfiles.getAll()))
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(() -> Log.d(TAG, "Added examples"));
+        }
+        mProfileRecyclerAdapter.updateList(profiles);
     }
 
     @Override

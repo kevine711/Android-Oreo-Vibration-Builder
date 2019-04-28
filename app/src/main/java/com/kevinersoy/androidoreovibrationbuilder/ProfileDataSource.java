@@ -28,19 +28,19 @@ public interface ProfileDataSource {
      *
      * @param profile the profile to be inserted or updated.
      */
-    Flowable<Long> insertOrUpdateProfile(Profile profile);
+    Long insertOrUpdateProfile(Profile profile);
 
     /**
      * Inserts the profiles into the data source, or, if this is an existing profile, updates it.
      *
      * @param profiles the profiles to be inserted or updated.
      */
-    Completable insertOrUpdateAll(List<Profile> profiles);
+    List<Long> insertOrUpdateAll(List<Profile> profiles);
 
     /**
      * Deletes the profile from the data source.
      */
-    Completable delete(Profile profile);
+    void delete(Profile profile);
 
     /**
      * @return record count.
