@@ -9,12 +9,18 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 
+import com.kevinersoy.androidoreovibrationbuilder.db.room.Profile;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.ProfileDao;
+import com.kevinersoy.androidoreovibrationbuilder.ui.VibrationProfileListActivity;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.List;
 
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -28,6 +34,8 @@ import static com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuild
  * and (later) fetch other peoples profiles from the server
  */
 public class ProfileSyncService extends IntentService {
+
+    public static final String TAG = ProfileSyncService.class.getSimpleName();
 
     // Upload Profile/Profiles
     private static final String ACTION_UPLOAD = "com.kevinersoy.androidoreovibrationbuilder.action.UPLOAD";
@@ -86,81 +94,72 @@ public class ProfileSyncService extends IntentService {
                     handleActionFetch(restoreOnly);
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    Log.e("ProfileSyncService", "JSON parse failed");
+                    Log.e(TAG, "JSON parse failed");
                 }
             }
         }
     }
+
 
     /**
      * Handle action Upload in the provided background thread with the provided
      * parameters.
      */
     private void handleActionUpload(String profileId) {
-        String[] columns = {
-                Profiles.COLUMN_PROFILE_NAME,
-                Profiles.COLUMN_PROFILE_DELAY,
-                Profiles.COLUMN_PROFILE_INTENSITY,
-                Profiles._ID
-        };
-        String selection = null;
-        String[] selectionArgs = null;
+        ProfileDao profileDao = DataManager.getInstance().getDB(getApplicationContext()).profileDao();
+
         if(!profileId.equals(ALL_PROFILES)){
-            selection = Profiles._ID + " = ? ";
-            selectionArgs = new String[] {profileId};
+            profileDao.findById(Integer.parseInt(profileId))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io())
+                    .subscribe(profile -> upload(profile),
+                            Throwable::printStackTrace);
+        } else {
+            // All Profiles
+            profileDao.getProfiles()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io())
+                    .subscribe(profiles -> upload(profiles));
         }
-        Cursor cursor = getContentResolver().query(Profiles.CONTENT_URI, columns, selection, selectionArgs, null);
-        int profileNamePos = cursor.getColumnIndex(Profiles.COLUMN_PROFILE_NAME);
-        int profileDelayPos = cursor.getColumnIndex(Profiles.COLUMN_PROFILE_DELAY);
-        int profileIntensityPos = cursor.getColumnIndex(Profiles.COLUMN_PROFILE_INTENSITY);
-        int profileIdPos = cursor.getColumnIndex(Profiles._ID);
+    }
 
-        String GUID = DataManager.getInstance().getGUID(this);
+    private void upload(List<Profile> profiles){
+        for(Profile profile : profiles){
+            upload(profile);
+        }
+    }
 
+    private void upload(Profile profile){
+        if("example".equals(profile.getGuid())){
+            return;  // Don't sync example profiles
+        }
         OkHttpClient client = new OkHttpClient();
 
-        while(cursor.moveToNext()) {
-            String profileName = cursor.getString(profileNamePos);
-            String profileDelay = cursor.getString(profileDelayPos);
-            String profileIntensity = cursor.getString(profileIntensityPos);
-            int currentProfileId = cursor.getInt(profileIdPos);
-            String globalProfileId = GUID + currentProfileId;
+        Log.d(TAG, "Syncing profile: " + profile.getName());
+        //http://www.kevinersoy.com/addProfile.php?profile_ID=globalProfileId&user_ID=GUID&profile_name=profileName&profile_intensity=profileIntensity&profile_delay=profileDelay
+        Uri.Builder builder = new Uri.Builder();
+        builder.scheme("http")
+                .authority("www.kevinersoy.com")
+                .appendPath("addProfile.php")
+                .appendQueryParameter("user_ID", profile.getGuid() == null ? DataManager.getInstance().getGUID(this) : profile.getGuid())
+                .appendQueryParameter("profile_name", profile.getName())
+                .appendQueryParameter("profile_intensity", profile.getIntensity())
+                .appendQueryParameter("profile_delay", profile.getDelay());
+        String url = builder.build().toString();
 
-            //Skip upload if Example Profile
-            if("Example1Example2Example3".contains(profileName)) {
-                Log.d("ProfileSyncService", "Found Example Profile");
-                continue;
-            }
-
-            Log.d("ProfileSyncService", "Syncing profile: " + profileName);
-
-            //http://www.kevinersoy.com/addProfile.php?profile_ID=globalProfileId&user_ID=GUID&profile_name=profileName&profile_intensity=profileIntensity&profile_delay=profileDelay
-            Uri.Builder builder = new Uri.Builder();
-            builder.scheme("http")
-                    .authority("www.kevinersoy.com")
-                    .appendPath("addProfile.php")
-                    .appendQueryParameter("profile_ID", globalProfileId)
-                    .appendQueryParameter("user_ID", GUID)
-                    .appendQueryParameter("profile_name", profileName)
-                    .appendQueryParameter("profile_intensity", profileIntensity)
-                    .appendQueryParameter("profile_delay", profileDelay);
-            String url = builder.build().toString();
-
-            //use OkHttp
-            Request request = new Request.Builder()
-                    .url(url)
-                    .build();
-            try {
-                Response response = client.newCall(request).execute();
-                Log.d("ProfileSyncService", "OkHttp response on upload : " + response.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.e("ProfileSyncService", "OkHttp upload request failed");
-            }
-
+        //use OkHttp
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        try {
+            Response response = client.newCall(request).execute();
+            Log.d(TAG, "OkHttp response on upload : " + response.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, "OkHttp upload request failed");
         }
-        cursor.close();
     }
+
 
     /**
      * Handle action Fetch in the provided background thread with the provided
@@ -190,13 +189,15 @@ public class ProfileSyncService extends IntentService {
 
         } catch (IOException e) {
             e.printStackTrace();
-            Log.e("ProfileSyncService", "OkHttp fetch request failed");
+            Log.e(TAG, "OkHttp fetch request failed");
         } catch (NullPointerException e) {
             e.printStackTrace();
         }
 
         if(array != null) {
-            Log.d("ProfileSyncService", "JSONArray : " + array);
+            Log.d(TAG, "JSONArray : " + array);
+
+            ProfileDao profileDao = DataManager.getInstance().getDB(getApplicationContext()).profileDao();
 
             //Loop through JSON objects returned from the server and either insert or update
             //depending if the _ID exists in the database already
@@ -206,48 +207,17 @@ public class ProfileSyncService extends IntentService {
                 String intensity = object.getString("profile_intensity");
                 String delay = object.getString("profile_delay");
                 String GUID = object.getString("user_ID");
-                String profileId = object.getString("profile_ID");
-                String localId = parseLocalId(GUID, profileId);
+                //String profileId = object.getString("profile_ID");
 
-                String[] profileColumns = {
-                        Profiles.COLUMN_PROFILE_NAME,
-                        Profiles.COLUMN_PROFILE_INTENSITY,
-                        Profiles.COLUMN_PROFILE_DELAY,
-                        Profiles._ID
-                };
-                Uri profileUri = ContentUris.withAppendedId(Profiles.CONTENT_URI, Integer.parseInt(localId));
-                try {
-                    Cursor cursor = getContentResolver().query(profileUri, profileColumns, null, null, null);
-                    if (cursor != null && cursor.getCount() > 0){
-                        //found item in table with this index, update it
-                        final ContentValues values = new ContentValues();
-                        values.put(Profiles.COLUMN_PROFILE_NAME, name);
-                        values.put(Profiles.COLUMN_PROFILE_INTENSITY, intensity);
-                        values.put(Profiles.COLUMN_PROFILE_DELAY, delay);
-                        getContentResolver().update(profileUri, values, null, null);
-                    } else {
-                        //no item with this index found, insert it.
-                        final ContentValues values = new ContentValues();
-                        values.put(Profiles.COLUMN_PROFILE_NAME, name);
-                        values.put(Profiles.COLUMN_PROFILE_INTENSITY, intensity);
-                        values.put(Profiles.COLUMN_PROFILE_DELAY, delay);
-                        values.put(Profiles._ID, localId);
-                        getContentResolver().insert(Profiles.CONTENT_URI, values);
-                    }
-
-                    if (cursor != null)
-                        cursor.close();
-                } catch (NullPointerException e){
-                    e.printStackTrace();
+                // Check if profile like this exists, otherwise insert
+                if(profileDao.findAndCount(name, intensity, delay) == 0){
+                    Profile profile = new Profile(name, intensity, delay, GUID);
+                    profileDao.insert(profile);
+                    Log.d(TAG, "Inserting profile from server : " + name);
                 }
             }
         }
 
     }
 
-    private String parseLocalId(String guid, String profileId) {
-        //profile ID is the GUID appended with the local database _ID
-        //extracting local database _ID
-        return profileId.substring(Math.min(guid.length(), profileId.length()));
-    }
 }

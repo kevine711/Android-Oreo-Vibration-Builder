@@ -24,6 +24,9 @@ public interface ProfileDao {
     @Query("SELECT COUNT(name) FROM profile")
     Flowable<Integer> getSize();
 
+    @Query("SELECT COUNT(id) FROM profile WHERE name LIKE :name AND intensity LIKE :intensity AND delay LIKE :delay")
+    int findAndCount(String name, String intensity, String delay);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     List<Long> insertAll(List<Profile> profiles);
 
