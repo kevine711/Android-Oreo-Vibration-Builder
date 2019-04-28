@@ -3,6 +3,9 @@ package com.kevinersoy.androidoreovibrationbuilder;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.kevinersoy.androidoreovibrationbuilder.models.ProfileInfo;
+import com.kevinersoy.androidoreovibrationbuilder.ui.VibrationProfileListActivity;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,8 +35,8 @@ public class ProfileCreationTest {
     }
 
     @Rule
-    public ActivityTestRule<VibrationProfileList> mVibrationProfileListActivity =
-            new ActivityTestRule<>(VibrationProfileList.class);
+    public ActivityTestRule<VibrationProfileListActivity> mVibrationProfileListActivity =
+            new ActivityTestRule<>(VibrationProfileListActivity.class);
 
 
 

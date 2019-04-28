@@ -1,4 +1,4 @@
-package com.kevinersoy.androidoreovibrationbuilder;
+package com.kevinersoy.androidoreovibrationbuilder.ui;
 
 import android.app.AlertDialog;
 import android.app.LoaderManager;
@@ -24,12 +24,16 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.kevinersoy.androidoreovibrationbuilder.VibrationBuilderProviderContract.Profiles;
+import com.kevinersoy.androidoreovibrationbuilder.DataManager;
+import com.kevinersoy.androidoreovibrationbuilder.models.ProfileInfo;
+import com.kevinersoy.androidoreovibrationbuilder.R;
+import com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuilderProviderContract.Profiles;
+import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpenHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+import static com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
 
 /**
  * Created by kevinersoy on 2/27/18.
@@ -37,7 +41,7 @@ import static com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilder
  * 2/28 - Changing intent to pass position rather than actual profile since DataManager is singleton
  */
 
-public class VibrationProfile extends AppCompatActivity
+public class VibrationProfileActivity extends AppCompatActivity
         implements LoaderManager.LoaderCallbacks<Cursor>{
     public static final String PROFILE_ID = "com.kevinersoy.androidoreovibrationbuilder.PROFILE_ID";
     public static final String ORIGINAL_PROFILE_NAME = "com.kevinersoy.androidoreovibrationbuilder.ORIGINAL_PROFILE_NAME";
@@ -138,20 +142,26 @@ public class VibrationProfile extends AppCompatActivity
     }
 
     private void validateInputs(){
-        //use regex to replace non numeric digits (excl ",")
-        //also replace multiple delimiters
         String text = mTextDelay.getText().toString();
-        text = text.replaceAll("[^\\d,]", ""); //remove all non numeric/","
-        text = text.replaceAll("[,]{2,}",","); //remove duplicate ","
-        mTextDelay.setText(text);
+        mTextDelay.setText(cleanDelayInput(text));
 
         text = mTextIntensity.getText().toString();
-        text = text.replaceAll("[^\\d,]", "");
-        mTextIntensity.setText(text);
+        mTextIntensity.setText(cleanIntensityInput(text));
+    }
 
+    private String cleanDelayInput(String input){
+        //use regex to replace non numeric digits (excl ",")
+        //also replace multiple delimiters
+        input = input.replaceAll("[^\\d,]", ""); //remove all non numeric/","
+        input = input.replaceAll("[,]{2,}",","); //remove duplicate ","
+        return input;
+    }
+
+    private String cleanIntensityInput(String input){
+        input = input.replaceAll("[^\\d,]", ""); //remove all non numeric/","
         //correct for max intensity 255
         List<Integer> intensity = new ArrayList<Integer>();
-        for (String s : text.split(",")){
+        for (String s : input.split(",")){
             int value;
             try {
                 value = Integer.parseInt(s);
@@ -169,9 +179,8 @@ public class VibrationProfile extends AppCompatActivity
                     intensity.add(value);
             }
         }
-        //convert back to csv String and set EditText value
-        mTextIntensity.setText(buildCsvString(intensity));
 
+        return buildCsvString(intensity);
     }
 
     private String buildCsvString(List list){

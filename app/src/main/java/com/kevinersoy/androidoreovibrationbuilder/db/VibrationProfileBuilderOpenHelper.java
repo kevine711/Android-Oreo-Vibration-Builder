@@ -1,4 +1,4 @@
-package com.kevinersoy.androidoreovibrationbuilder;
+package com.kevinersoy.androidoreovibrationbuilder.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

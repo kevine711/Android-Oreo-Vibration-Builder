@@ -1,13 +1,13 @@
-package com.kevinersoy.androidoreovibrationbuilder;
+package com.kevinersoy.androidoreovibrationbuilder.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 
 /**
  * Created by kevinersoy on 2/27/18.
- * This class will hold all the necessary info to populate the VibrationProfile Activity.
+ * This class will hold all the necessary info to populate the VibrationProfileActivity Activity.
  * This POJO will implement parcelable in order to be passed as an intent extra from
- * VibrationProfileList.
+ * VibrationProfileListActivity.
  * 2/28 - Changing intent to pass position rather than actual profile since DataManager is singleton
  */
 

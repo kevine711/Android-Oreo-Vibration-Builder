@@ -1,6 +1,8 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
 
+import android.app.Application;
+import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -8,7 +10,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 
-import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpenHelper;
+import com.kevinersoy.androidoreovibrationbuilder.db.room.MyDatabase;
+import com.kevinersoy.androidoreovibrationbuilder.models.ProfileInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +29,9 @@ import java.util.UUID;
 public class DataManager {
     private static DataManager mInstance = null;
     private List<ProfileInfo> mProfiles = new ArrayList<>();
-
-
+    private String mGUID = null;
+    private MyDatabase database = null;
+    private final String DATABASE_NAME = "profileDB";
 
     public static DataManager getInstance(){
         //Implement singleton functionality
@@ -123,9 +129,25 @@ public class DataManager {
         return index;
     }
 
+    public MyDatabase getDB(Context appContext){
+        if(!(appContext instanceof Application)){
+            throw new IllegalArgumentException("getDB requires Application context");
+        }
+        if(database == null){
+            database = Room.databaseBuilder(appContext, MyDatabase.class, DATABASE_NAME).build();
+        }
+        return database;
+    }
+
+    public boolean dbReady(){
+        return database != null;
+    }
 
     //Get globally unique identifier
     public String getGUID(Context context){
+        if(mGUID != null){
+            return mGUID;
+        }
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         String GUID = sharedPreferences.getString("GUID", "default");
         if(GUID.equals("default")){
@@ -134,7 +156,7 @@ public class DataManager {
             editor.putString("GUID", GUID);
             editor.apply();
         }
-
+        mGUID = GUID;
         return GUID;
     }
 

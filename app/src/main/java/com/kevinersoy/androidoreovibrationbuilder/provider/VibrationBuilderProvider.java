@@ -1,4 +1,4 @@
-package com.kevinersoy.androidoreovibrationbuilder;
+package com.kevinersoy.androidoreovibrationbuilder.provider;
 
 import android.content.ContentProvider;
 import android.content.ContentResolver;
@@ -9,8 +9,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 
-import com.kevinersoy.androidoreovibrationbuilder.VibrationBuilderProviderContract.Profiles;
-import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+import com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuilderProviderContract.Profiles;
+import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpenHelper;
 
 public class VibrationBuilderProvider extends ContentProvider {
 

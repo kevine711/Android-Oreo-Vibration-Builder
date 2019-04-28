@@ -1,4 +1,4 @@
-package com.kevinersoy.androidoreovibrationbuilder;
+package com.kevinersoy.androidoreovibrationbuilder.provider;
 
 import android.net.Uri;
 import android.provider.BaseColumns;

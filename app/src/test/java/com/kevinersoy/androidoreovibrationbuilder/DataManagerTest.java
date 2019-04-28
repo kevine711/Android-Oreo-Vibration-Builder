@@ -1,5 +1,7 @@
 package com.kevinersoy.androidoreovibrationbuilder;
 
+import com.kevinersoy.androidoreovibrationbuilder.models.ProfileInfo;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

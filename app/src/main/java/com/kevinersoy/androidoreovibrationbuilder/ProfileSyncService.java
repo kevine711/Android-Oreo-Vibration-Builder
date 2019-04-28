@@ -19,7 +19,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import static com.kevinersoy.androidoreovibrationbuilder.VibrationBuilderProviderContract.Profiles;
+import static com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuilderProviderContract.Profiles;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in

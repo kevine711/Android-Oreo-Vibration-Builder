@@ -1,4 +1,4 @@
-package com.kevinersoy.androidoreovibrationbuilder;
+package com.kevinersoy.androidoreovibrationbuilder.ui;
 
 import android.content.Context;
 import android.content.Intent;
@@ -10,11 +10,12 @@ import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
-import com.kevinersoy.androidoreovibrationbuilder.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
+import com.kevinersoy.androidoreovibrationbuilder.R;
+import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderDatabaseContract.ProfileInfoEntry;
 
 /**
  * Created by kevinersoy on 3/8/18.
- * This class is our custom adapter for the RecyclerView from VibrationProfileList activity
+ * This class is our custom adapter for the RecyclerView from VibrationProfileListActivity activity
  * We'll make use of a passed cursor (from database query) to populate our view holders
  * Nested ViewHolder class extends RecyclerView.ViewHolder and sets the onClickListeners for each
  * view.
@@ -117,8 +118,8 @@ public class ProfileRecyclerAdapter extends RecyclerView.Adapter<ProfileRecycler
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent intent = new Intent(mContext, VibrationProfile.class);
-                    intent.putExtra(VibrationProfile.PROFILE_ID, mId);
+                    Intent intent = new Intent(mContext, VibrationProfileActivity.class);
+                    intent.putExtra(VibrationProfileActivity.PROFILE_ID, mId);
                     mContext.startActivity(intent);
                 }
             });

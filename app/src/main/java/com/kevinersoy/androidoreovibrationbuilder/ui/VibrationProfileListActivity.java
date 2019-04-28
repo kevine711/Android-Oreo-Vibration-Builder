@@ -1,4 +1,4 @@
-package com.kevinersoy.androidoreovibrationbuilder;
+package com.kevinersoy.androidoreovibrationbuilder.ui;
 
 import android.app.LoaderManager;
 import android.content.CursorLoader;
@@ -18,9 +18,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.kevinersoy.androidoreovibrationbuilder.VibrationBuilderProviderContract.Profiles;
+import com.kevinersoy.androidoreovibrationbuilder.BuildConfig;
+import com.kevinersoy.androidoreovibrationbuilder.DataManager;
+import com.kevinersoy.androidoreovibrationbuilder.ProfileSyncService;
+import com.kevinersoy.androidoreovibrationbuilder.R;
+import com.kevinersoy.androidoreovibrationbuilder.provider.VibrationBuilderProviderContract.Profiles;
+import com.kevinersoy.androidoreovibrationbuilder.db.VibrationProfileBuilderOpenHelper;
 
-public class VibrationProfileList extends AppCompatActivity
+public class VibrationProfileListActivity extends AppCompatActivity
             implements LoaderManager.LoaderCallbacks<Cursor>{
     private ProfileRecyclerAdapter mProfileRecyclerAdapter;
     private VibrationProfileBuilderOpenHelper mDbOpenHelper;
@@ -44,7 +49,7 @@ public class VibrationProfileList extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(VibrationProfileList.this, VibrationProfile.class));
+                startActivity(new Intent(VibrationProfileListActivity.this, VibrationProfileActivity.class));
             }
         });
 
@@ -74,7 +79,7 @@ public class VibrationProfileList extends AppCompatActivity
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        Log.d("VibrationProfileList", "Options item selected");
+        Log.d("VibrationProfileListActivity", "Options item selected");
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_upload) {
             upload();
