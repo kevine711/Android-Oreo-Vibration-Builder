@@ -301,7 +301,7 @@ public class VibrationProfileActivity extends AppCompatActivity {
         Log.d(TAG, "Profile Name : " + mProfile.getName());
         if(mProfile != null){
             mTextName.setText(mProfile.getName());
-            mTextDelay.setText(mProfile.getName());
+            mTextDelay.setText(mProfile.getDelay());
             mTextIntensity.setText(mProfile.getIntensity());
             mProfileId = mProfile.getId();
             if(mProfile.getGuid() == null){
